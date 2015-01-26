@@ -1,4 +1,4 @@
-drupal_shanti_texts
-===================
+shanti_essays
+=============
 
-A redo of the SHANTI Essays, but more than just a name change
+SHANTI Essays Drupal Module
