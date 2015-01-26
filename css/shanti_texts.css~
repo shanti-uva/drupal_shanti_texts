@@ -1,0 +1,154 @@
+#shanti-essays-container {
+  position:relative;
+  height:739px;
+  margin:0;
+  padding:0;
+}
+
+#shanti-essays-body {
+  position:relative;
+  float:left;
+  height:100%;
+  width:50%;
+  min-width:480px;
+  padding:0 2em;
+  margin:0;
+  overflow:scroll;
+  background-color:white;
+}
+
+#shanti-essays-sidebar {
+  /* display:none; */ /* INITIAL CONDITION to prevent showing un-tabbed content */
+  /* position:relative; */ /* Disabling this fixed problem of cut-off popovers */
+  padding:0 1em;
+  height:100%;
+  overflow:scroll;
+}
+
+
+#shanti-essays-sidebar.ui-widget-content {
+  border:none;
+}
+
+#shanti-essays-sidebar .ui-widget-header {
+  background:none;
+  border:none;
+  margin-top:1em;
+  margin-left:1.7em;
+}
+
+#shanti-essays-sidebar .field {
+  display:block;
+  border-bottom:1px solid gray;
+  padding-bottom:1em;
+  margin-bottom:1em;
+}
+
+/* THIS SHOULD BE IN THE THEME */
+#shanti-essays-sidebar .field-type-shanti-kmaps-fields-default .field-item {
+  display:inline;
+}
+
+#shanti-essays-toc {
+  position:relative;
+}
+
+#shanti-essays-toc > li.toc-item-node {
+  font-weight:bold;
+  font-size:110%;
+  margin-bottom:1em;
+}
+
+#shanti-essays-meta  > .book-title,
+#shanti-essays-links > .book-title
+{
+  font-family:"museo-sans-500","Trebuchet MS","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Tahoma,sans-serif;
+  font-weight:bold;
+  font-size:110%;
+  margin-bottom:1em;
+}
+
+#shanti-essays-toc ul {
+  margin-top:0;
+  padding-top:0;
+}
+
+#shanti-essays-toc > ul:first-of-type {
+  margin-left:0;
+  padding-left:0;
+}
+
+#shanti-essays-toc li {
+  font-size:12pt;
+  font-family:"museo-sans-500","Trebuchet MS","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Tahoma,sans-serif;
+}
+
+#shanti-essays-links {}
+
+#shanti-essays-meta {}
+
+#shanti-essays-body .book-section p, 
+#shanti-essays-body .book-section p *, 
+#shanti-essays-body .book-section li, 
+#shanti-essays-body .book-section li *
+{
+  /* font-family: 'droidserif',palatino,'Palatino Linotype',georgia,serif; */
+  font-family: Baskerville, Palatino,'Palatino Linotype',georgia,serif;
+  font-size:16px;
+}
+
+#shanti-essays-body .book-section .bourdieu {
+  font-family: Baskerville, Palatino,'Palatino Linotype',georgia,serif;
+  font-size:14px; 
+  border-top:1px solid gray; 
+  border-bottom:1px solid gray; 
+  padding:1em 1em; 
+  margin:1em 0;
+}
+
+#shanti-essays-toc li, 
+#shanti-essays-links .links li 
+{
+  list-style-type:none;
+}
+
+h1.book-heading {
+  font-size:14pt;
+  border-top:1px solid gray;
+  padding-top:1em;
+  font-weight:bold;
+}
+
+.section-1 > h1.book-heading {
+  font-size:18pt;  
+}
+
+.book-edit-menu {
+  background:#AAA;
+  width:60px;
+  text-align:center;
+  padding:5px;
+  border-radius:5px;
+  margin-bottom:5px;
+}
+
+.book-edit-menu a {
+  margin:0 5px;
+}
+
+.book-edit-menu a,
+.book-edit-menu a:visited
+{
+  color:white;
+}
+
+.node-type-book section.content-section {
+  padding:0;
+  margin:0;  
+}
+
+.node-type-book .content-section {
+  padding-bottom:0;
+  margin:0;  
+}
+

@@ -1,0 +1,618 @@
+<?php 
+
+define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
+define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
+
+function shanti_texts_help($path, $arg) {
+  if ($path == "admin/help#shanti_texts") {
+    return '<p>' . t('SHANTI Essays help is not currently available.') . '</p>';
+  }
+}
+  
+function shanti_texts_enable() {
+  drupal_set_message($message = t('SHANTI Essays activated.'), $type = 'status');
+  drupal_theme_rebuild();
+}
+
+function shanti_texts_menu() {
+  return array(
+    'shanti_texts' => array(
+      'page callback' => 'shanti_texts_default',
+      'type' => MENU_CALLBACK,
+      'access arguments' => array('access content'),
+    ),
+    'shanti_texts/voyant/%' => array(
+      'page callback' => 'shanti_texts_voyant',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access arguments' => array('access content'),
+    ),
+    'shanti_texts/node_ajax/%' => array(
+      'page callback' => 'shanti_texts_node_ajax',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access callback' => 'user_access', 
+      'access arguments' => array('access content'),
+    ),
+    'shanti_texts/node_embed/%' => array(
+      'page callback' => 'shanti_texts_node_embed',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access callback' => 'user_access', 
+      'access arguments' => array('access content'),
+    ),
+    'shanti_texts/node_json/%' => array(
+      'page callback' => 'shanti_texts_node_json',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access arguments' => array('access content'),    
+    ),
+    'shanti_texts_mega_search/node/%' => array(
+    	'page callback' => 'shanti_texts_mega_search_node',
+    	'page_arguments' => array(2),
+	    'access callback' => 'user_access', 
+  	  'access arguments' => array('access content'),
+    	'type' => MENU_CALLBACK,
+    ),
+  );
+}
+
+/**
+* Menu Callbacks
+*/
+
+function shanti_texts_default() {
+  drupal_goto("<front>"); // Redirect to front page
+}
+
+function shanti_texts_voyant($nid) {
+  global $base_url;
+  $url = "http://voyeurtools.org";
+  drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/api/$nid")));
+}
+
+function shanti_texts_mega_search_node($nid, $type = 'ajax') {
+	$args = arg(); // Not sure why I have to do this -- passed argument does not work  
+	$nid = $args[2];
+	$node = node_load($nid);
+  if ($type == 'ajax') {
+    
+		// Create the primary tabs
+		$tabs_primary = array();
+		$rs = db_query("select title, path, weight from menu_router where path rlike '^node/%/[^/]+$' and path not like '%delete%' order by weight desc");
+    foreach ($rs as $r) { $tabs_primary[$r->path] = $r->title; }
+		$tabs_primary_links = array();
+		foreach ($tabs_primary as $tab_path => $tab_label) {
+			$path = str_replace('%', $nid, $tab_path);
+			if (drupal_valid_path($path,TRUE))  {
+				$tabs_primary_links[] = l($tab_label,$path);
+			}
+		}
+		$tabs_primary_ra = array(
+			'#theme' 	     => 'item_list', 
+			'#type' 	     => 'ul',
+			'#attributes'  => array('class' => array('tabs','primary')),
+			'#items' 	     => $tabs_primary_links,
+		);
+		$menu = '';
+		if (count($tabs_primary_links) > 1) {
+	  	$menu = drupal_render($tabs_primary_ra);
+	  }
+
+		// Create breadcrumbs
+		global $base_url;
+		$breadcrumbs_ra = array(
+			'#theme' => 'item_list',
+			'#type' => 'ol',
+			'#attributes' => array('class' => array('breadcrumb')),
+			'#items' => array(
+				'<a href="'.$base_url.'">Texts:</a>',
+				'<a href="/">Home</a> <i class="icon shanticon-arrow3-right"></i>',
+				'<a href="#">'.$node->title.'</a> <i class="icon shanticon-arrow3-right"></i>'
+			),
+		);
+		$breadcrumbs = drupal_render($breadcrumbs_ra);
+
+		// Get the node content
+		$html = drupal_render(node_view($node,'whole'));
+  	
+  	// Adjust and populate the page with jQuery
+    $commands = array(
+    	ajax_command_html('.region-content .content', $html),
+    	ajax_command_invoke('#shanti-texts-toc', 'addClass', array('active')),
+    	ajax_command_invoke('#shanti-texts-sidebar-tabs > li.first', 'addClass', array('active')),
+    	ajax_command_remove("#node-$nid > h2"),
+    	ajax_command_html('h1.page-title span.page-title-text', $node->title),
+    	ajax_command_replace('.primary.tabs', $menu),
+    	ajax_command_html('nav.breadwrap',$breadcrumbs),
+    );
+    $ajax = array('#type' => 'ajax', '#commands' => $commands);
+    print ajax_deliver($ajax);
+  }
+  else {
+  	drupal_goto("node/".$node->nid); // Actually, add frag and args here ...
+  }	
+}
+
+function shanti_texts_node_ajax($nid) {
+	drupal_goto("shanti_texts/node_embed/$nid");
+	/*
+	drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css'); // Put in theme instead?
+	drupal_add_js(SHANTI_TEXTS_PATH . '/js/shanti_texts_embed.js'); // Put in theme instead?
+  $node = node_load($nid);
+  $build = node_view($node,'default'); 
+  return $build;
+  */
+}
+
+function shanti_texts_node_embed($nid) {
+	// This expects that the template suggestion, "page--shanti_texts--node_embed.tpl.php", exists
+	drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css');
+	drupal_add_js(SHANTI_TEXTS_PATH . '/js/shanti_texts_embed.js');
+  $node = node_load($nid);
+  $build = node_view($node,'embed'); // We alter the node by this view mode below ...
+  return $build;
+}
+
+function shanti_texts_node_json($nid) {
+  $node = node_load($nid);
+  print ajax_render($node);
+}
+
+/**
+ * This template is called by the visit function used by
+ * book_export_traverse() use throughout the module
+ */
+function shanti_texts_theme($existing, $type, $theme, $path) {
+  return array(
+    'shanti_texts_whole_node_html' => array(
+      'variables' => array('node' => NULL, 'children' => NULL, 'editmenu' => NULL),
+    ),
+  );
+}
+
+function theme_shanti_texts_whole_node_html($vars) {
+	$depth    = $vars['node']->book['depth'];
+  $title    = check_plain($vars['node']->title);
+  $content  = $vars['node']->rendered; // THIS IS CREATED IN *_whole_node()
+  $nid			= $vars['node']->nid;
+	$output = '';
+	$output .= "<div id=\"book-node-$nid\" class=\"book-section section-$depth\">\n";
+  $output .= "<h1 class=\"book-heading\">$title</h1>\n";  
+  $output .= drupal_render($vars['editmenu']) . "\n";
+  $output .= $content . "\n";
+  $output .= $vars['children'] . "\n";
+	$output .= "</div>\n";	
+	return $output;
+}
+
+/**
+ * Mega Search Block 
+ */
+function shanti_texts_block_info() {
+  $blocks = array();
+  $blocks['mega_search'] = array(
+    'info' 	=> t('SHANTI Texts Mega Search'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+function shanti_texts_block_view($delta = '') {
+  $block = array();
+  if ($delta == 'mega_search') {
+    $block['subject'] = t('Mega Search');
+    if (user_access('access content')) {
+      $block['content']['mega_search_form'] = drupal_get_form('shanti_texts_mega_search_form');
+    }   
+  } 
+  return $block;
+}
+
+function shanti_texts_mega_search_form($form, &$form_state) {
+	$form = array();
+	$form['#attached'] = array('css' => array(SHANTI_TEXTS_PATH . '/css/shanti_texts_mega_search.css'));	
+	$form['#tree'] = TRUE;
+	$form['mega_search_string'] = array(
+		'#type'       => 'textfield',
+		'#size'       => 60,
+		'#maxlength'  => 128,
+		'#required'   => TRUE, 
+		'#description' => t('Enter text to search for and press enter'),
+		'#ajax' 	=> array(
+			'callback' 	=> 'shanti_texts_mega_search_form_callback',
+			'wrapper' 	=> 'shanti-texts-mega-search-results',
+			'method' 		=> 'replace',
+			'effect' 		=> 'fade',
+			'event'			=> 'change',
+			'keypress'	=> TRUE,
+		),
+	);
+	$form['mega_search_type'] = array(
+		'#title' 					=> t('Search type'),
+		'#type'						=> 'radios',
+		'#options' 				=> array(0 => t('Title'), 1 => t('Full Text')),
+    '#default_value' 	=> isset($form_state['values']['mega_search_type']) ? $form_state['values']['mega_search_type'] : 0,
+	);
+	$form['mega_search_submit'] = array(
+		'#type' 			=> 'submit',
+		'#value' 			=> 'Search',
+		'#attributes' => array('class' => array('btn')),
+		'#ajax' 			=> array(
+			'callback' 		=> 'shanti_texts_mega_search_form_callback',
+			'wrapper' 		=> 'shanti-texts-mega-search-results',
+			'method' 			=> 'replace',
+			'effect' 			=> 'fade',
+			'event'				=> 'change',
+		),
+	);
+	$form['mega_search_results'] = array(
+		'#theme'      => 'item_list',
+		'#type'       => 'ol',
+		'#prefix'			=> "<div id='shanti-texts-mega-search-results'>",
+		'#suffix'			=> "</div>",
+		'#items'			=> isset($form_state['values']['mega_search_string']) ? _shanti_texts_mega_search_query($form_state['values']['mega_search_string'],$form_state['values']['mega_search_type']) : _shanti_texts_mega_search_query(''),
+	);
+	return $form;
+}
+
+function shanti_texts_mega_search_form_validate($form, &$form_state) {
+	if (preg_match("/^\s*$/", $form_state['values']['mega_search_string'])) {
+		form_set_error('mega_search_string', t('Enter a search string.'));
+	}
+}
+
+// DEPENDS ON FIELD NAME -- although if BODY were used, this would not be a prob
+function _shanti_texts_mega_search_query($search_str = '', $search_type = 0) {
+  $items = array();
+  watchdog_array('SHANTI','search_type',$search_type);
+	if ($search_str && $search_type == 1) {
+		$pattern = "([.?!;,\]\)]|\"|')\s+"; // To split textareas into sentences
+		$sql = "SELECT b.bid, n.nid, p.title as 'parent', n.title"
+			. ", c.field_book_content_value as 'content' "
+			. "FROM {field_data_field_book_content} c "
+			. "JOIN {node} n ON (c.entity_id = n.nid) "
+			. "JOIN {book} b ON (b.nid = n.nid) "
+			. "JOIN {node} p ON (b.bid = p.nid) "
+			. "JOIN {menu_links} m ON (b.mlid = m.mlid) "
+			. "WHERE {field_book_content_value} RLIKE :search_str "
+			. "ORDER BY b.bid, m.depth, m.weight "
+			; // A badass SQL statement
+		$rs = db_query($sql, array(':search_str' => $search_str));
+		if ($rs) {
+			$k = array(); // Keeps a hit count per book, to properly identify kwic hits
+			$viewable = array();
+			if ($rs->rowCount()) {
+				foreach($rs as $r) {
+					$this_node = node_load($r->nid); // Trap this?
+					if (!isset($viewable[$r->nid])) {
+						$viewable[$r->nid] = node_access('view', $this_node);
+					} 
+					$hits = 0;
+					if ($viewable[$r->nid]) { // Check if node is viewable
+						$hits++;
+						$k[$r->bid] = isset($k[$r->bid]) ? $k[$r->bid] : 0;
+						$content = strip_tags($r->content);
+						$v = field_view_field('node',$this_node,'field_book_content');
+						$content_array = preg_split("/$pattern/i", $content);
+						$kwic_array = array();
+						foreach($content_array as $n => $line) {
+							if (preg_match("/$search_str/i",$line)) {
+								$k[$r->bid]++; // We count number of hits per book, not per node, to match hit count on book viewer page
+								$href = url("shanti_texts_mega_search/node/".$r->bid.'/nojs/', array('fragment' => 'book-node-' . $r->nid, 'query' => array('s' => $search_str, 'n' => $k[$r->bid])));
+								$kwic_array[] = preg_replace("/($search_str)/i","<a href='$href' class='use-ajax shanti-texts-search-hit'>$1</a>",$line);
+							}
+						}
+						$kwic_count = count($kwic_array);
+						$kwic = "<div class='shanti-texts-mega-search-kwic'>".implode("</div><div class='shanti-texts-mega-search-kwic'>",$kwic_array)."</div>";
+						$items[] = l($r->parent .': '. $r->title, "shanti_texts_mega_search/node/".$r->bid.'/nojs/', array('fragment' => 'book-node-' . $r->nid, 'query' => array('s' => $search_str), 'attributes' => array('class' => array('use-ajax'))))  
+						. "<div>$kwic_count result(s):</div>"
+						. "<div id='kwic-hits-{$r->nid}'>$kwic</div>"; 					
+					} 
+					else {
+						//drupal_set_message('Content restricted for node ' . $r->nid);
+					}
+				} 	
+			} 
+			else {
+				//drupal_set_message("Got no results.");	
+			}	
+		} 
+		else {
+			//drupal_set_message("Bad things must have happened.");	
+		}	
+	} 
+	elseif ($search_str && $search_type == 0) {
+		$sql = "SELECT n.nid, n.title FROM {node} n JOIN {book} b USING(nid) "
+		. "WHERE b.nid = b.bid AND n.title RLIKE :search_str ORDER BY n.title";
+		$rs = db_query($sql, array(':search_str' => $search_str));
+		if ($rs) {
+			$viewable = array();
+			if ($rs->rowCount()) {
+				foreach($rs as $r) {
+					$this_node = node_load($r->nid); // Trap this?
+					if (!isset($viewable[$r->nid])) {
+						$viewable[$r->nid] = node_access('view', $this_node);
+					} 
+					$hits = 0;
+					if ($viewable[$r->nid]) { // Check if node is viewable
+						$hits++;
+						$k[$r->bid] = isset($k[$r->bid]) ? $k[$r->bid] : 0;
+						$items[] = l(
+							$r->title, "shanti_texts_mega_search/node/".$r->nid.'/nojs/', 
+							array('attributes' => array('class' => array('use-ajax')))
+						); 					
+					} 
+					else {
+						//drupal_set_message('Content restricted for node ' . $r->nid);
+					}
+				} 	
+			} 
+			else {
+				//drupal_set_message("Got no results.");	
+			}	
+		} 
+	}
+	elseif (!$search_str) {
+		foreach(book_get_books() as $book) {
+			$link = array(
+				'#theme' => 'link',
+				'#path' => 'shanti_texts_mega_search/'.$book['link_path'].'/nojs/',
+				'#text' =>  $book['link_title'], 
+				'#options' => array(
+					'attributes' => array('class' => array('use-ajax')),
+					'html' => FALSE,
+				),
+			);
+			$items[] = drupal_render($link);
+    }
+	}
+	else {
+		// Not sure how we get here
+	}
+	if ($search_str && count($items)) drupal_set_message(count($items) . " pages found with matching content");
+	return $items;
+}
+
+function shanti_texts_mega_search_form_callback($form, $form_state) {
+	return $form['mega_search_results'];
+}
+
+/**
+ * This does most of the heavy lifting
+ */
+function shanti_texts_preprocess_node(&$vars) {
+
+  if ($vars['type'] == 'book' && $vars['teaser'] == FALSE) {
+    
+  	// Get some info ... If not top of book, go to top
+    $nid  = $vars['nid'];
+    $bid  = $vars['book']['bid'];
+    if (!$bid) { drupal_set_message("This is not a book yet"); }
+    elseif ($bid != $nid) { drupal_goto("node/$bid",array('fragment' => "book-node-$nid")); }
+    $top_mlid = $vars['book']['p1'];
+    
+    // Remove user picture (probably should do this in the theme handler)
+    unset($vars['user_picture']);
+    
+    // Create the TOC and combined body
+    $book = $vars['book'];
+    $tree = book_menu_subtree_data($book);
+    
+    // This is hacky and expensive
+    // Create a menu of these will you're at it? Or do this in JQuery ...
+    $book_body_rendered = book_export_traverse($tree, 'shanti_texts_whole_node');
+    if (isset($_GET['s'])) {
+    	$s = $_GET['s'];
+    	$book_body_rendered = preg_replace_callback("/($s)/i",function($match) use (&$count) {$count++; return "<span id='shanti-texts-search-hit-{$count}' class='shanti-texts-search-hit'>$match[1]</span>";},$book_body_rendered,-1,$count);
+    }
+    
+		// Create the Meta element
+		
+		// ANOTHER DEPENDENCY: KMaps Fields .... Will be better when you create your own Content Type
+		// $kmap_terms = $vars['field_kmap_term'][$vars['language']]; // This does not honor the field display settings
+		$terms_build = node_view($vars['node'], 'metadata'); // DEPENDENCY: view_mode 'metadata'
+		unset($terms_build['#theme']); 
+		hide($terms_build['title']);
+		hide($terms_build['links']);
+		hide($terms_build['group_content_access']);
+		hide($terms_build['field_general_featured_image']); // CCK dependency
+		hide($terms_build['field_book_content']); // CCK dependency
+		// Try using field_view_field() instead of the above
+    
+    $vars['content']['shanti_texts_container'] = array(
+    	'#type' => 'container',
+    	'#attributes' => array('id' => 'shanti-texts-container'),
+    );
+    $vars['content']['shanti_texts_container']['body'] = array(
+    	'#type'   => 'markup',
+    	'#prefix' => '<div id="shanti-texts-body">',
+    	'#markup' => $book_body_rendered,
+    	'#suffix' => '</div>',
+    );
+    $vars['content']['shanti_texts_container']['sidebar'] = array(
+			'#type' => 'container',
+			'#attributes' => array('id' => 'shanti-texts-sidebar', 'role' => 'tabpanel'), // Set to hidden in CSS 
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabs'] = array(
+      '#type' => 'ul',  
+    	'#theme' => 'item_list',
+    	'#attributes' => array('id' => 'shanti-texts-sidebar-tabs', 'role' => 'tablist', 'class' => array('nav','nav-tabs','nav-justified')),
+    	'#items' => array(
+    		array('class' => '', 'role' => 'presentation', 'data' => '<a href="#shanti-texts-toc" role="tab" data-toggle="tab" aria-expanded="true">Contents</a>'),
+    		array('class' => '', 'role' => 'presentation', 'data' => '<a href="#shanti-texts-meta" role="tab" data-toggle="tab">Description</a>'),
+    		array('class' => '', 'role' => 'presentation', 'data' => '<a href="#shanti-texts-links" role="tab" data-toggle="tab">Views</a>'),
+      ),
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent'] = array(
+    	'#type' => 'container',
+    	'#attributes' => array('class' => array('tab-content')),
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['toc'] = array(
+    	'#type' 	=> 'markup',
+    	'#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-toc">',
+    	'#markup' => book_export_traverse($tree, 'shanti_texts_whole_toc'), 
+    	'#suffix' => '</div>',
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
+    	'#type' 	=> 'markup',
+    	'#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
+    	'#markup' => drupal_render($terms_build), 
+    	'#suffix' => '</div>',
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
+    	'#type' => 'container',
+    	'#attributes' => array('id' => 'shanti-texts-links', 'class' => array('links','tab-pane'), 'role' => 'tabpanel'),
+    );
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['title'] = array(
+			'#markup' => '<div class="book-title">' . $book['title'] . '</div>',
+		);
+    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['list'] = array(
+    	'#theme' => 'item_list',
+    	'#type' => 'ul',
+    	'#items' => array(
+    		l(t('View in PubReader'),			"book_pubreader/$bid",				array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader'))),
+    		l(t('View in Voyant'),				"shanti_texts/voyant/$bid",	array('attributes'  => array('class' => array(), 'title' => 'View book in Voyant tools', 'target' => '_blank'))),
+    	),
+    );
+        
+    // Add CSS and JS
+    $js_settings = array(
+      'book' 				=> $vars['book'],
+      'book_title' 	=> $vars['book']['link_title'],
+      'kwic_n'			=> isset($_GET['n']) ? $_GET['n'] : 0,  
+    );
+    
+    $vars['content']['shanti_texts_container']['#attached'] = array(
+    	'js' => array(
+    		SHANTI_TEXTS_PATH . '/js/shanti_texts.js' => array('type' => 'file'),
+    		SHANTI_TEXTS_PATH . '/js/jquery.localscroll.min.js' => array('type' => 'file'),
+    		SHANTI_TEXTS_PATH . '/js/jquery.scrollTo.min.js' => array('type' => 'file'),
+    		array('data' => array('shantiTexts' => $js_settings), 'type' => 'setting'),
+    	),
+    	'css' => array(
+    		SHANTI_TEXTS_PATH . '/css/shanti_texts.css',
+    		SHANTI_TEXTS_PATH . '/css/shanti_texts_footnotes.css',
+    	),
+    );
+    
+    foreach(array_keys($vars['content']) as $k) {
+      if ($k != 'shanti_texts_container') {
+        unset($vars['content'][$k]);
+      }      
+    }
+    unset($vars['submitted']); 
+        
+  }
+}
+
+// Actually had to create these by hand in the site
+function shanti_texts_entity_info_alter(&$info) {
+  $info['node']['view modes'] += array(
+    'whole' => array(
+      'label' => t('Whole'),
+      'custom settings' => FALSE,
+    ),
+    'metadata' => array(
+      'label' => t('Metadata'),
+      'custom settings' => FALSE,
+    ),
+    'embed' => array(
+      'label' => t('Embed'),
+      'custom settings' => FALSE,
+    ),
+  );
+}
+
+function shanti_texts_node_view_alter(&$build) {
+	if ($build['#view_mode'] == 'embed' && isset($build['#contextual_links'])) {
+		unset($build['#contextual_links']);
+	}
+}
+
+
+/**
+ * Called by book_export_traverse() above to generate the content of the page.
+ * May want to rewrite; this was just copied and heavilty modified
+ * from the book module's print function. I really don't understand it at this
+ * point.
+ */ 
+function shanti_texts_whole_node($node, $children = '') {
+  $build = node_view($node, 'whole'); // Depends on view mode define in info_alter hook
+  $node->rendered = drupal_render($build['field_book_content']); // DEPENDS ON CONTENT TYPE
+  $nid = $node->nid;
+  $editmenu = array(
+    '#type' => 'container',
+    '#access' => user_access('add content to books'),
+    '#attributes' => array('class' => array('book-edit-menu')),
+    'toc-edit-page' => array(
+      '#markup'   => l(
+        '<span class="glyphicon glyphicon-edit"></span>',
+        "node/$nid/edit",
+        array(
+          'html' => TRUE, 
+          'query' => array('destination' => current_path()),
+          'fragment' => "node-$nid",
+          'attributes' => array('title' => t('Edit this page')),
+          // Above does not work. May need to define a menu path that calls drupal_goto() 
+        )
+      ),
+    ),
+    'toc-add-child-page' => array(
+      '#markup' => l(
+        '<span class="glyphicon glyphicon-plus"></span>',
+        "node/add/book",
+        array(
+          'html' => TRUE,
+          'query' => array('parent' => $node->book['mlid']),
+          'attributes' => array('title' => t('Add a child page')),
+        )
+      ),
+    )
+  );
+
+  $new_build = array(
+    '#theme' 		=> 'shanti_texts_whole_node_html',
+    '#node' 		=> $node,
+    '#children' => $children,
+    '#editmenu' => $editmenu,
+  );
+  return drupal_render($new_build);
+}
+
+/**
+ * Also called by book_export_traverse() to generate a table of contents.
+ * This is a hand-made function that might be replaced by something more Drupally.
+ * I don't understand how the $children argument works at this point.
+ * Should name space the class names and use a render array.
+ */
+function shanti_texts_whole_toc($node, $children = '') {
+    $output = '';
+    $nid 		= $node->nid;
+    $title 	= check_plain($node->title);
+    $depth 	= $node->book['depth'];
+    
+    if ($prev = book_prev($node->book)) {
+      $x = $depth - $prev['depth'];
+      if ($x > 0) $output .= "<ul class='level-{$prev['depth']}'>\n"; // $x should never be > 1
+      elseif ($x < 0) {
+        for ($i = 0; $i > $x; $i--) {
+          $output .= "</ul>\n"; 
+        }
+      }
+    }
+    
+		$output .= "<li class='toc-item-node' id='toc-item-node-$nid'><a href='#book-node-$nid'>$title</a></li>\n";
+  	
+    if ($next = book_next($node->book)) {
+      // Do nothing
+    } else {
+      // Clean up ..
+      for ($i = 0; $i < ($depth - 1); $i++) {
+        $output .= "</ul>\n";         
+      }
+    }
+    
+    $output .= $children;
+    return $output;
+}
