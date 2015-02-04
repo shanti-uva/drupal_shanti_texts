@@ -204,7 +204,17 @@ function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
     $bid = $node->book['bid'];
     cache_clear_all('shanti_texts_data_book_' . $bid, 'cache');
-    drupal_set_message('Cache reset for this text.');
+    cache_clear_all('shanti_texts_data_toc_' . $bid, 'cache');
+    drupal_set_message('Caches cleared for this text.');
+  }
+}
+
+function shanti_texts_node_delete($node) {
+  if ($node->type == 'book') {
+    $bid = $node->book['bid'];
+    cache_clear_all('shanti_texts_data_book_' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_toc_' . $bid, 'cache');
+    drupal_set_message('Caches cleared for this text.');
   }
 }
 
