@@ -200,11 +200,20 @@ function shanti_texts_get_whole_toc($book) {
   return $shanti_texts_data_toc[$bid];
 }
 
+function shanti_texts_node_insert($node) {
+  if ($node->type == 'book') {
+    $bid = $node->book['bid'];
+    cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
+    drupal_set_message('Caches cleared for this text.');
+  }  
+}
+
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
     $bid = $node->book['bid'];
-    cache_clear_all('shanti_texts_data_book_' . $bid, 'cache');
-    cache_clear_all('shanti_texts_data_toc_' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
     drupal_set_message('Caches cleared for this text.');
   }
 }
@@ -212,8 +221,8 @@ function shanti_texts_node_update($node) {
 function shanti_texts_node_delete($node) {
   if ($node->type == 'book') {
     $bid = $node->book['bid'];
-    cache_clear_all('shanti_texts_data_book_' . $bid, 'cache');
-    cache_clear_all('shanti_texts_data_toc_' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
     drupal_set_message('Caches cleared for this text.');
   }
 }
