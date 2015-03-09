@@ -77,7 +77,6 @@ function shanti_texts_voyant($nid) {
   drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/api/$nid")));
 }
 
-<<<<<<< HEAD
 /*
 function shanti_texts_mega_search_node($nid, $type = 'ajax') {
 	$args = arg(); // Not sure why I have to do this -- passed argument does not work  
@@ -143,8 +142,6 @@ function shanti_texts_mega_search_node($nid, $type = 'ajax') {
 }
 */
 
-=======
->>>>>>> dev
 function shanti_texts_node_ajax($nid) {
 	drupal_goto("shanti_texts/node_embed/$nid");
 }
