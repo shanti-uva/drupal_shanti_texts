@@ -107,6 +107,26 @@ function shanti_texts_theme($existing, $type, $theme, $path) {
   );
 }
 
+function shanti_texts_menu_alter(&$items) {
+  $items['node/%node/reorder']['title'] = 'Sort Text Sections';
+  unset($items['node/%node/edit']['title']);
+  $items['node/%node/edit']['title callback'] = 'shanti_texts_edit_tab_title';
+  $items['node/%node/edit']['title arguments'] = array(1);
+}
+
+function shanti_texts_edit_tab_title($node) {
+  if ($node->type == 'book') {
+    return t('Edit Text');
+  }
+  return t('Edit');
+}
+
+function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'book_admin_edit') {
+    $form['save']['#value'] = 'Save text sections';
+  }
+}
+
 function shanti_texts_get_whole_book($book) {
   $bid = $book['bid'];
   $shanti_texts_data_book[$bid] = &drupal_static(__FUNCTION__);
