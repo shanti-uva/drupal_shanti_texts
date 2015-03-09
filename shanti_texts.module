@@ -192,6 +192,17 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
+function shanti_texts_menu_link_update($link) {
+  if (preg_match("/^book-toc-/", $link['menu_name'])) {
+    $node = node_load($link['nid']);
+    $bid = $node->book['bid'];
+    cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
+    cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
+    drupal_set_message('Caches cleared for this text because of menu update.');
+  }  
+}
+
+
 function shanti_texts_get_whole_book($book) {
   $bid = $book['bid'];
   $shanti_texts_data_book[$bid] = &drupal_static(__FUNCTION__);
