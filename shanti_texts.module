@@ -336,6 +336,7 @@ function shanti_texts_mega_search_form_validate($form, &$form_state) {
 	}
 }
 */
+
 /*
 // DEPENDS ON FIELD NAME -- although if BODY were used, this would not be a prob
 function _shanti_texts_mega_search_query($search_str = '', $search_type = 1, $limit_offset = 0) {
@@ -455,20 +456,20 @@ function _shanti_texts_mega_search_query($search_str = '', $search_type = 1, $li
         $items[] = drupal_render($link);	    
 	    }
 	  }
-	  /*
-		foreach(book_get_books() as $book) {
-			$link = array(
-				'#theme' => 'link',
-				'#path' => 'shanti_texts_mega_search/'.$book['link_path'].'/nojs/',
-				'#text' =>  $book['link_title'], 
-				'#options' => array(
-					'attributes' => array('class' => array('use-ajax')),
-					'html' => FALSE,
-				),
-			);
-			$items[] = drupal_render($link);
-    }
-    */
+
+		#foreach(book_get_books() as $book) {
+		#	$link = array(
+		#		'#theme' => 'link',
+		#		'#path' => 'shanti_texts_mega_search/'.$book['link_path'].'/nojs/',
+		#		'#text' =>  $book['link_title'], 
+		#		'#options' => array(
+		#			'attributes' => array('class' => array('use-ajax')),
+		#			'html' => FALSE,
+		#		),
+		#	);
+		#	$items[] = drupal_render($link);
+    #}
+
 	}
 	else {
 		// Not sure how we get here
@@ -478,6 +479,7 @@ function _shanti_texts_mega_search_query($search_str = '', $search_type = 1, $li
 	return $items;
 }
 */
+
 /*
 function shanti_texts_mega_search_form_callback($form, $form_state) {
 	return $form['mega_search_results'];
