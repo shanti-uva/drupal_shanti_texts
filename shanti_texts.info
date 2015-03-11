@@ -1,12 +1,11 @@
 name = SHANTI Texts
-description = Drupal Books modded for long-form blogging
+description = Drupal Books modded for scholarly texts
 package = SHANTI
 core = 7.x
 
 files[] = shanti_texts.filters.inc
+files[] = shanti_texts.megasearch.inc
 
-dependencies[]  = book
+dependencies[]	= book
 dependencies[]  = book_made_simple
-;dependencies[]  = book_explorer
-;dependencies[]  = fontawesome
 dependencies[]  = shanti_kmaps_fields
