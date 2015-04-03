@@ -4,7 +4,6 @@ define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
 define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
 
 // These are used for cacheing
-//$shanti_texts_cache_me  = 0; // Use to capture cache requests // FAIL
 $shanti_texts_data_book = array();
 $shanti_texts_data_toc  = array();
 
