@@ -199,12 +199,10 @@ function theme_shanti_texts_whole_node_html($vars) {
 
 function shanti_texts_get_whole_book($book) {
   $bid = $book['bid'];
-  //global $shanti_texts_data_book; // ADDED LATER; NECESSARY?
   $shanti_texts_data_book[$bid] = &drupal_static(__FUNCTION__);
-  if (!isset($shanti_texts_data[$bid])) {
+  if (!isset($shanti_texts_data_book[$bid])) {
     if ($cache = cache_get('shanti_texts_data_book' . $bid)) {
       $shanti_texts_data_book[$bid] = $cache->data;
-      watchdog_array('SHANTI','c1','Using cached text.');
     }
     else {
       $tree = book_menu_subtree_data($book);
@@ -217,12 +215,10 @@ function shanti_texts_get_whole_book($book) {
 
 function shanti_texts_get_whole_toc($book) {
   $bid = $book['bid'];
-  //global $shanti_texts_data_toc; // ADDED LATER; NECESSARY?
   $shanti_texts_data_toc[$bid] = &drupal_static(__FUNCTION__);
   if (!isset($shanti_texts_data_toc[$bid])) {
     if ($cache = cache_get('shanti_texts_data_toc' . $bid)) {
       $shanti_texts_data_toc[$bid] = $cache->data;
-      watchdog_array('SHANTI','c2','Using cached TOC.');
     }
     else {
       $tree = book_menu_subtree_data($book);
