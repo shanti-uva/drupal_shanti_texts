@@ -3,10 +3,6 @@
 define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
 define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
 
-// These are used for cacheing
-$shanti_texts_data_book = array();
-$shanti_texts_data_toc  = array();
-
 function shanti_texts_help($path, $arg) {
   if ($path == "admin/help#shanti_texts") {
     return '<p>' . t('SHANTI Texts help is not currently available.') . '</p>';
@@ -135,12 +131,19 @@ function shanti_texts_clear_cache_text($bid) {
     drupal_set_message("All caches cleared for this text.");
 }
 
+/*
 function shanti_texts_menu_link_update($link) {
   if (preg_match("/^book-toc-/", $link['menu_name'])) {
-  	// Should only do this once!
-		shanti_texts_clear_cache_text($link['bid']);
+  	static $t = 0;
+  	if (!$t) {
+			shanti_texts_clear_cache_text($link['bid']);
+			$t = 1;
+		} else {
+			//drupal_set_message("Skipped this update since already done.");
+		}
   } 
 }
+*/
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
@@ -184,7 +187,7 @@ function theme_whole_toc_html($vars) {
 */
 function shanti_texts_get_whole_book($book) {
   $bid = $book['bid'];
-  $shanti_texts_data_book[$bid] = &drupal_static(__FUNCTION__);
+  $shanti_texts_data_book = &drupal_static(__FUNCTION__);
   if (!isset($shanti_texts_data_book[$bid])) {
     if ($cache = cache_get('shanti_texts_data_book' . $bid)) {
       $shanti_texts_data_book[$bid] = $cache->data;
@@ -195,12 +198,12 @@ function shanti_texts_get_whole_book($book) {
       cache_set('shanti_texts_data_book' . $bid, $shanti_texts_data_book[$bid], 'cache');
     }
   }
-  return $shanti_texts_data_book[$bid];
+  return $shanti_texts_data_book;
 }
 
 function shanti_texts_get_whole_toc($book) {
   $bid = $book['bid'];
-  $shanti_texts_data_toc[$bid] = &drupal_static(__FUNCTION__);
+  $shanti_texts_data_toc = &drupal_static(__FUNCTION__);
   if (!isset($shanti_texts_data_toc[$bid])) {
     if ($cache = cache_get('shanti_texts_data_toc' . $bid)) {
       $shanti_texts_data_toc[$bid] = $cache->data;
@@ -211,7 +214,7 @@ function shanti_texts_get_whole_toc($book) {
       cache_set('shanti_texts_data_toc' . $bid, $shanti_texts_data_toc[$bid], 'cache');
     }
   }
-  return $shanti_texts_data_toc[$bid];
+  return $shanti_texts_data_toc;
 }
 
 /**
@@ -229,10 +232,12 @@ function shanti_texts_preprocess_node(&$vars) {
     elseif ($bid != $nid) { drupal_goto("node/$bid", array('fragment' => "book-node-$nid")); }
     $top_mlid = $vars['book']['p1'];
     
-    // Create the TOC and combined body
+    // Get the TOC and combined body
     $book = $vars['book'];
-    # $tree = book_menu_subtree_data($book);
-    $book_body_rendered = shanti_texts_get_whole_book($book);
+    $shanti_texts_data_book = shanti_texts_get_whole_book($book);
+    $book_body_rendered = $shanti_texts_data_book[$bid]; 
+    $shanti_texts_data_toc = shanti_texts_get_whole_toc($book);
+    $book_toc_rendered = $shanti_texts_data_toc[$bid]; 
     
     // Highlight search hits
     if (isset($_GET['s'])) {
@@ -292,7 +297,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['toc'] = array(
     	'#type' 	=> 'markup',
     	'#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-toc"><ul>',
-    	'#markup' => shanti_texts_get_whole_toc($book),
+    	'#markup' => $book_toc_rendered,
     	'#suffix' => '</ul></div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
