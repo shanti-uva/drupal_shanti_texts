@@ -34,6 +34,13 @@ function shanti_texts_menu() {
       'access callback' => 'user_access', 
       'access arguments' => array('access content'),
     ),
+    'shanti_texts/node_ajax_text/%' => array(
+      'page callback' => 'shanti_texts_node_ajax_text',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access callback' => 'user_access', 
+      'access arguments' => array('access content'),
+    ),
     'shanti_texts/node_embed/%' => array(
       'page callback' => 'shanti_texts_node_embed',
       'page arguments' => array(2),
@@ -61,19 +68,23 @@ function shanti_texts_default() {
 function shanti_texts_voyant($nid) {
   global $base_url;
   $url = "http://voyeurtools.org";
-  drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/api/$nid")));
+  drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/node_ajax_text/$nid")));
 }
 
 function shanti_texts_node_ajax($nid) {
 	drupal_goto("shanti_texts/node_embed/$nid");
 }
 
+function shanti_texts_node_ajax_text($nid) {
+	$node = node_load($nid);
+	$content = shanti_texts_get_whole_book($node->book);
+	print $content[$nid];
+}
+
 function shanti_texts_node_embed($nid) {
-	// This expects that the template suggestion, "page--shanti_texts--node_embed.tpl.php", exists
 	drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css');
-	drupal_add_js(SHANTI_TEXTS_PATH . '/js/shanti_texts_embed.js');
   $node = node_load($nid);
-  $build = node_view($node,'embed'); // We alter the node by this view mode below ...
+  $build = node_view($node,'embed');
   return $build;
 }
 
@@ -117,6 +128,19 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $form['actions']['submit']['#value']  = 'Save text section';
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
   }
+  
+  // CANCEL BUTTONS
+  if (!isset($node->nid) || isset($node->is_new)) {
+    $destination = 'node/add';
+  }
+  else {
+    $destination = "node/{$node->nid}";
+  }
+  $form['actions']['cancel'] = array(
+    '#markup' => l(t('Cancel'), $destination),
+    '#weight' => 20,
+  );
+  
 }
 
 function shanti_texts_book_submit_callback($form, &$form_state) {
@@ -354,25 +378,43 @@ function shanti_texts_preprocess_node(&$vars) {
 
 // Actually had to create these by hand in the site
 function shanti_texts_entity_info_alter(&$info) {
-  $info['node']['view modes'] += array(
-    'whole' => array(
-      'label' => t('Whole'),
-      'custom settings' => FALSE,
-    ),
-    'metadata' => array(
-      'label' => t('Metadata'),
-      'custom settings' => FALSE,
-    ),
-    'embed' => array(
-      'label' => t('Embed'),
-      'custom settings' => FALSE,
-    ),
+  $info['node']['view modes']['whole'] = array(
+		'label' => t('Whole'),
+		'custom settings' => TRUE,
+	);
+  $info['node']['view modes']['metadata'] = array(
+		'label' => t('Metadata'),
+		'custom settings' => TRUE,
+	);
+  $info['node']['view modes']['embed'] = array(
+		'label' => t('Embed'),
+		'custom settings' => TRUE,
   );
 }
 
 function shanti_texts_node_view_alter(&$build) {
-	if ($build['#view_mode'] == 'embed' && isset($build['#contextual_links'])) {
+	// Does not work -- popover remains the same!
+	if ($build['#view_mode'] == 'embed') {
 		unset($build['#contextual_links']);
+		$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
+		$rs = db_query($sql);
+		while ($r = $rs->fetchObject()) {
+			if (array_key_exists($r->field_name,$build)) {
+				foreach ($build[$r->field_name] as $i => $inf) {
+					if (is_numeric($i)) {
+						foreach ($inf['info_popover']['#links'] as $key => $val) {
+							if (preg_match("/Related Texts/", $key)) {
+								$kid = $build[$r->field_name]['#items'][$i]['id'];
+								$domain = $build[$r->field_name]['#items'][$i]['domain'];
+								$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
+								$build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
+								$build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
+							}
+						}
+					}
+				}			
+			}
+		}		
 	}
 }
 
