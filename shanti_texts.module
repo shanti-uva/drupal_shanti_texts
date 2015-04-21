@@ -228,6 +228,49 @@ function shanti_texts_get_whole_toc($book) {
   return $shanti_texts_data_toc;
 }
 
+function shanti_texts_get_whole_metadata($node, $view_mode) {
+	$nid = $node->nid;
+	$build = array();
+	if ($cache = cache_get('shanti_texts_data_metadata' . $nid)) {
+		$build = $cache->data;
+	}
+	else {
+		$build = node_view($node, $view_mode);
+		unset($build['#theme']); 
+		hide($build['comments']);
+		hide($build['title']);
+		hide($build['links']);
+		hide($build['group_content_access']);
+		hide($build['field_general_featured_image']); // CCK dependency
+		hide($build['field_book_content']); // CCK dependency
+		hide($build['book_navigation']);
+		unset($build['#contextual_links']);
+		if ($view_mode == 'embed') {
+			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
+			$rs = db_query($sql);
+			while ($r = $rs->fetchObject()) {
+				if (array_key_exists($r->field_name,$build)) {
+					foreach ($build[$r->field_name] as $i => $inf) {
+						if (is_numeric($i)) {
+							foreach ($inf['info_popover']['#links'] as $key => $val) {
+								if (preg_match("/Related Texts/", $key)) {
+									$kid = $build[$r->field_name]['#items'][$i]['id'];
+									$domain = $build[$r->field_name]['#items'][$i]['domain'];
+									$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
+									$build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
+									$build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
+								}
+							}
+						}
+					}			
+				}
+			}				
+		}
+		cache_set('shanti_texts_data_metadata'.$nid,$build,'cache');
+	}
+	return $build;
+}
+
 /**
  * This does most of the heavy lifting. Note that is could be replaced by 
  * a Panel, with views for the TOC and Content parts.
@@ -243,14 +286,16 @@ function shanti_texts_preprocess_node(&$vars) {
     elseif ($bid != $nid) { drupal_goto("node/$bid", array('fragment' => "book-node-$nid")); }
     $top_mlid = $vars['book']['p1'];
     
-    // Get the TOC and combined body
+    // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $book_body_rendered = $shanti_texts_data_book[$bid]; 
     $shanti_texts_data_toc = shanti_texts_get_whole_toc($book);
     $book_toc_rendered = $shanti_texts_data_toc[$bid]; 
+		$meta_build = shanti_texts_get_whole_metadata($vars['node'], $vars['view_mode']);
     
     // Highlight search hits
+    /*
     if (isset($_GET['s'])) {
     	$s = $_GET['s'];
     	$book_body_rendered = preg_replace_callback(
@@ -263,39 +308,7 @@ function shanti_texts_preprocess_node(&$vars) {
     	  $book_body_rendered,-1,$count
     	);
     }
-    
-		// Create the Meta element -- Should this be built externally too? And cached? YES.
-		// ANOTHER DEPENDENCY: KMaps Fields .... Will be better when you create your own Content Type
-		$terms_build = node_view($vars['node'], $vars['view_mode']);
-		unset($terms_build['#theme']); 
-		hide($terms_build['comments']);
-		hide($terms_build['title']);
-		hide($terms_build['links']);
-		hide($terms_build['group_content_access']);
-		hide($terms_build['field_general_featured_image']); // CCK dependency
-		hide($terms_build['field_book_content']); // CCK dependency
-		if ($vars['view_mode'] == 'embed') {
-			unset($terms_build['#contextual_links']);
-			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
-			$rs = db_query($sql);
-			while ($r = $rs->fetchObject()) {
-				if (array_key_exists($r->field_name,$terms_build)) {
-					foreach ($terms_build[$r->field_name] as $i => $inf) {
-						if (is_numeric($i)) {
-							foreach ($inf['info_popover']['#links'] as $key => $val) {
-								if (preg_match("/Related Texts/", $key)) {
-									$kid = $terms_build[$r->field_name]['#items'][$i]['id'];
-									$domain = $terms_build[$r->field_name]['#items'][$i]['domain'];
-									$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
-									$terms_build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
-									$terms_build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
-								}
-							}
-						}
-					}			
-				}
-			}				
-		}
+    */
     
     $vars['content']['shanti_texts_container'] = array(
     	'#type' => 'container',
@@ -334,7 +347,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
     	'#type' 	=> 'markup',
     	'#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-    	'#markup' => drupal_render($terms_build), 
+    	'#markup' => drupal_render($meta_build), 
     	'#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(

@@ -12,11 +12,11 @@ div.node > h2:first-of-type,
 
 
 body, .page-wrapper {
-	_height:700px;
+	height:700px;
 }
 
 html #shanti-texts-container {
-  _height: 700px;
+  height: 700px;
   background-color: #EEE;
   padding-bottom:18px;
 }
