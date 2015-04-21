@@ -264,18 +264,38 @@ function shanti_texts_preprocess_node(&$vars) {
     	);
     }
     
-		// Create the Meta element
-		// THIS IS WHY THE EMBED POPOVERS STAY THE SAME
+		// Create the Meta element -- Should this be built externally too? And cached? YES.
 		// ANOTHER DEPENDENCY: KMaps Fields .... Will be better when you create your own Content Type
-		// $kmap_terms = $vars['field_kmap_term'][$vars['language']]; // This does not honor the field display settings
-		$terms_build = node_view($vars['node'], 'metadata'); // DEPENDENCY: view_mode 'metadata'
+		$terms_build = node_view($vars['node'], $vars['view_mode']);
 		unset($terms_build['#theme']); 
+		hide($terms_build['comments']);
 		hide($terms_build['title']);
 		hide($terms_build['links']);
 		hide($terms_build['group_content_access']);
 		hide($terms_build['field_general_featured_image']); // CCK dependency
 		hide($terms_build['field_book_content']); // CCK dependency
-		// Try using field_view_field() instead of the above?
+		if ($vars['view_mode'] == 'embed') {
+			unset($terms_build['#contextual_links']);
+			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
+			$rs = db_query($sql);
+			while ($r = $rs->fetchObject()) {
+				if (array_key_exists($r->field_name,$terms_build)) {
+					foreach ($terms_build[$r->field_name] as $i => $inf) {
+						if (is_numeric($i)) {
+							foreach ($inf['info_popover']['#links'] as $key => $val) {
+								if (preg_match("/Related Texts/", $key)) {
+									$kid = $terms_build[$r->field_name]['#items'][$i]['id'];
+									$domain = $terms_build[$r->field_name]['#items'][$i]['domain'];
+									$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
+									$terms_build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
+									$terms_build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
+								}
+							}
+						}
+					}			
+				}
+			}				
+		}
     
     $vars['content']['shanti_texts_container'] = array(
     	'#type' => 'container',
@@ -378,33 +398,6 @@ function shanti_texts_entity_info_alter(&$info) {
 		'custom settings' => TRUE,
   );
 }
-
-function shanti_texts_node_view_alter(&$build) {
-	// Does not work -- popover remains the same!
-	if ($build['#view_mode'] == 'embed') {
-		unset($build['#contextual_links']);
-		$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
-		$rs = db_query($sql);
-		while ($r = $rs->fetchObject()) {
-			if (array_key_exists($r->field_name,$build)) {
-				foreach ($build[$r->field_name] as $i => $inf) {
-					if (is_numeric($i)) {
-						foreach ($inf['info_popover']['#links'] as $key => $val) {
-							if (preg_match("/Related Texts/", $key)) {
-								$kid = $build[$r->field_name]['#items'][$i]['id'];
-								$domain = $build[$r->field_name]['#items'][$i]['domain'];
-								$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
-								$build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
-								$build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
-							}
-						}
-					}
-				}			
-			}
-		}		
-	}
-}
-
 
 /**
  * Called by book_export_traverse() above to generate the content of the page.
