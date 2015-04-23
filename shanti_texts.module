@@ -1,7 +1,7 @@
 <?php 
 
 define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
-define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
+//define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
 
 function shanti_texts_help($path, $arg) {
   if ($path == "admin/help#shanti_texts") {
@@ -237,6 +237,7 @@ function shanti_texts_get_whole_metadata($node, $view_mode) {
 	else {
 		$build = node_view($node, $view_mode);
 		unset($build['#theme']); 
+		unset($build['#contextual_links']);
 		hide($build['comments']);
 		hide($build['title']);
 		hide($build['links']);
@@ -244,7 +245,6 @@ function shanti_texts_get_whole_metadata($node, $view_mode) {
 		hide($build['field_general_featured_image']); // CCK dependency
 		hide($build['field_book_content']); // CCK dependency
 		hide($build['book_navigation']);
-		unset($build['#contextual_links']);
 		if ($view_mode == 'embed') {
 			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
 			$rs = db_query($sql);
