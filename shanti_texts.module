@@ -1,7 +1,7 @@
 <?php 
 
 define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
-define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
+//define('SHANTI_TEXTS_Q', $GLOBALS['_GET']['q']);
 
 function shanti_texts_help($path, $arg) {
   if ($path == "admin/help#shanti_texts") {
@@ -34,6 +34,13 @@ function shanti_texts_menu() {
       'access callback' => 'user_access', 
       'access arguments' => array('access content'),
     ),
+    'shanti_texts/node_ajax_text/%' => array(
+      'page callback' => 'shanti_texts_node_ajax_text',
+      'page arguments' => array(2),
+      'type' => MENU_CALLBACK,
+      'access callback' => 'user_access', 
+      'access arguments' => array('access content'),
+    ),
     'shanti_texts/node_embed/%' => array(
       'page callback' => 'shanti_texts_node_embed',
       'page arguments' => array(2),
@@ -61,19 +68,23 @@ function shanti_texts_default() {
 function shanti_texts_voyant($nid) {
   global $base_url;
   $url = "http://voyeurtools.org";
-  drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/api/$nid")));
+  drupal_goto($url,array('external' => TRUE,  'query' => array('input' => "$base_url/shanti_texts/node_ajax_text/$nid")));
 }
 
 function shanti_texts_node_ajax($nid) {
 	drupal_goto("shanti_texts/node_embed/$nid");
 }
 
+function shanti_texts_node_ajax_text($nid) {
+	$node = node_load($nid);
+	$content = shanti_texts_get_whole_book($node->book);
+	print $content[$nid];
+}
+
 function shanti_texts_node_embed($nid) {
-	// This expects that the template suggestion, "page--shanti_texts--node_embed.tpl.php", exists
 	drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css');
-	drupal_add_js(SHANTI_TEXTS_PATH . '/js/shanti_texts_embed.js');
   $node = node_load($nid);
-  $build = node_view($node,'embed'); // We alter the node by this view mode below ...
+  $build = node_view($node,'embed');
   return $build;
 }
 
@@ -117,10 +128,23 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $form['actions']['submit']['#value']  = 'Save text section';
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
   }
+  
+  // CANCEL BUTTONS
+  if (!isset($node->nid) || isset($node->is_new)) {
+    $destination = 'node/add';
+  }
+  else {
+    $destination = "node/{$node->nid}";
+  }
+  $form['actions']['cancel'] = array(
+    '#markup' => l(t('Cancel'), $destination),
+    '#weight' => 20,
+  );
+  
 }
 
 function shanti_texts_book_submit_callback($form, &$form_state) {
-  // Hack? At least check of bid exits ...
+  // Hack? At least check of bid exists ...
   $bid = $form_state['build_info']['args'][0]->book['bid']; 
   shanti_texts_clear_cache_text($bid);  
 }
@@ -130,20 +154,6 @@ function shanti_texts_clear_cache_text($bid) {
     cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
     drupal_set_message("All caches cleared for this text.");
 }
-
-/*
-function shanti_texts_menu_link_update($link) {
-  if (preg_match("/^book-toc-/", $link['menu_name'])) {
-  	static $t = 0;
-  	if (!$t) {
-			shanti_texts_clear_cache_text($link['bid']);
-			$t = 1;
-		} else {
-			//drupal_set_message("Skipped this update since already done.");
-		}
-  } 
-}
-*/
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
@@ -185,6 +195,7 @@ function theme_whole_toc_html($vars) {
 	// first. Vars: depth, prev_depth, nid, title, has_next
 }
 */
+
 function shanti_texts_get_whole_book($book) {
   $bid = $book['bid'];
   $shanti_texts_data_book = &drupal_static(__FUNCTION__);
@@ -217,6 +228,49 @@ function shanti_texts_get_whole_toc($book) {
   return $shanti_texts_data_toc;
 }
 
+function shanti_texts_get_whole_metadata($node, $view_mode) {
+	$nid = $node->nid;
+	$build = array();
+	if ($cache = cache_get('shanti_texts_data_metadata' . $nid)) {
+		$build = $cache->data;
+	}
+	else {
+		$build = node_view($node, $view_mode);
+		unset($build['#theme']); 
+		unset($build['#contextual_links']);
+		hide($build['comments']);
+		hide($build['title']);
+		hide($build['links']);
+		hide($build['group_content_access']);
+		hide($build['field_general_featured_image']); // CCK dependency
+		hide($build['field_book_content']); // CCK dependency
+		hide($build['book_navigation']);
+		if ($view_mode == 'embed') {
+			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
+			$rs = db_query($sql);
+			while ($r = $rs->fetchObject()) {
+				if (array_key_exists($r->field_name,$build)) {
+					foreach ($build[$r->field_name] as $i => $inf) {
+						if (is_numeric($i)) {
+							foreach ($inf['info_popover']['#links'] as $key => $val) {
+								if (preg_match("/Related Texts/", $key)) {
+									$kid = $build[$r->field_name]['#items'][$i]['id'];
+									$domain = $build[$r->field_name]['#items'][$i]['domain'];
+									$href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
+									$build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
+									$build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
+								}
+							}
+						}
+					}			
+				}
+			}				
+		}
+		cache_set('shanti_texts_data_metadata'.$nid,$build,'cache');
+	}
+	return $build;
+}
+
 /**
  * This does most of the heavy lifting. Note that is could be replaced by 
  * a Panel, with views for the TOC and Content parts.
@@ -232,14 +286,16 @@ function shanti_texts_preprocess_node(&$vars) {
     elseif ($bid != $nid) { drupal_goto("node/$bid", array('fragment' => "book-node-$nid")); }
     $top_mlid = $vars['book']['p1'];
     
-    // Get the TOC and combined body
+    // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $book_body_rendered = $shanti_texts_data_book[$bid]; 
     $shanti_texts_data_toc = shanti_texts_get_whole_toc($book);
     $book_toc_rendered = $shanti_texts_data_toc[$bid]; 
+		$meta_build = shanti_texts_get_whole_metadata($vars['node'], $vars['view_mode']);
     
     // Highlight search hits
+    /*
     if (isset($_GET['s'])) {
     	$s = $_GET['s'];
     	$book_body_rendered = preg_replace_callback(
@@ -252,19 +308,7 @@ function shanti_texts_preprocess_node(&$vars) {
     	  $book_body_rendered,-1,$count
     	);
     }
-    
-		// Create the Meta element
-		
-		// ANOTHER DEPENDENCY: KMaps Fields .... Will be better when you create your own Content Type
-		// $kmap_terms = $vars['field_kmap_term'][$vars['language']]; // This does not honor the field display settings
-		$terms_build = node_view($vars['node'], 'metadata'); // DEPENDENCY: view_mode 'metadata'
-		unset($terms_build['#theme']); 
-		hide($terms_build['title']);
-		hide($terms_build['links']);
-		hide($terms_build['group_content_access']);
-		hide($terms_build['field_general_featured_image']); // CCK dependency
-		hide($terms_build['field_book_content']); // CCK dependency
-		// Try using field_view_field() instead of the above?
+    */
     
     $vars['content']['shanti_texts_container'] = array(
     	'#type' => 'container',
@@ -303,7 +347,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
     	'#type' 	=> 'markup',
     	'#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-    	'#markup' => drupal_render($terms_build), 
+    	'#markup' => drupal_render($meta_build), 
     	'#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
@@ -354,28 +398,19 @@ function shanti_texts_preprocess_node(&$vars) {
 
 // Actually had to create these by hand in the site
 function shanti_texts_entity_info_alter(&$info) {
-  $info['node']['view modes'] += array(
-    'whole' => array(
-      'label' => t('Whole'),
-      'custom settings' => FALSE,
-    ),
-    'metadata' => array(
-      'label' => t('Metadata'),
-      'custom settings' => FALSE,
-    ),
-    'embed' => array(
-      'label' => t('Embed'),
-      'custom settings' => FALSE,
-    ),
+  $info['node']['view modes']['whole'] = array(
+		'label' => t('Whole'),
+		'custom settings' => TRUE,
+	);
+  $info['node']['view modes']['metadata'] = array(
+		'label' => t('Metadata'),
+		'custom settings' => TRUE,
+	);
+  $info['node']['view modes']['embed'] = array(
+		'label' => t('Embed'),
+		'custom settings' => TRUE,
   );
 }
-
-function shanti_texts_node_view_alter(&$build) {
-	if ($build['#view_mode'] == 'embed' && isset($build['#contextual_links'])) {
-		unset($build['#contextual_links']);
-	}
-}
-
 
 /**
  * Called by book_export_traverse() above to generate the content of the page.
