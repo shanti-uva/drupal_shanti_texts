@@ -258,7 +258,7 @@ function shanti_texts_preprocess_node(&$vars) {
 		unset($meta_build['#theme']); 
 		unset($meta_build['#contextual_links']);
 		// Change links to related texts when in embed view mode
-		if ($view_mode == 'embed') {
+		if ($vars['view_mode'] == 'embed') {
 			$sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
 			$rs = db_query($sql);
 			while ($r = $rs->fetchObject()) {
