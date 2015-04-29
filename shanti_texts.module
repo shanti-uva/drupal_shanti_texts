@@ -128,18 +128,21 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
   }
   
-  // CANCEL BUTTONS
-  if (!isset($node->nid) || isset($node->is_new)) {
-    $destination = 'node/add';
-  }
-  else {
-    $destination = "node/{$node->nid}";
-  }
-  $form['actions']['cancel'] = array(
-    '#markup' => l(t('Cancel'), $destination),
-    '#weight' => 20,
-  );
-  
+	// CANCEL BUTTONS
+  if (preg_match("/_node_form$/",$form['#form_id'])) {
+  	$destination = '';
+		if (!isset($node->nid) || isset($node->is_new)) {
+			$destination = 'node/add';
+		}
+		else {
+			$destination = "node/{$node->nid}";
+		}
+		$form['actions']['cancel'] = array(
+			'#markup' => l(t('Cancel'), $destination),
+			'#weight' => 20,
+		);
+	}  
+	
 }
 
 function shanti_texts_book_submit_callback($form, &$form_state) {
