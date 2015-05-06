@@ -53,9 +53,22 @@ function shanti_texts_menu() {
       'type' => MENU_CALLBACK,
       'access arguments' => array('access content'),    
     ),
-    'admin/shanti_texts' => array(
+    /*
+      $items['admin/content/book/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('book_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 8,
+    'file' => 'book.admin.inc',
+  );
+	*/
+    'admin/content/book/shanti_texts' => array(
+    	'title' => 'SHANTI Texts',
     	'page callback' => 'shanti_texts_admin_page',
-    	'type' => MENU_CALLBACK,
+    	'type' => MENU_LOCAL_TASK,
+    	'weight' => 10,
       'access arguments' => array('administer shanti texts'),            	
     ),
     'admin/shanti_texts/rebuild' => array(
@@ -113,11 +126,15 @@ function shanti_texts_node_json($nid) {
 
 function shanti_texts_admin_page() {
 	$build = array(
-		'#type' => 'ul',
-		'#theme' => 'item_list',
-		'#attributes' => array(),
-		'#items' => array(
-			array('data' => l('Rebuild texts (run this after clearing the cache)','admin/shanti_texts/rebuild')),
+		'#type' => 'container',
+		'#prefix' => ('<h2>SHANTI Texts Admin Page</h2>'),
+		'actions' => array(
+			'#type' => 'ul',
+			'#theme' => 'item_list',
+			'#attributes' => array(),
+			'#items' => array(
+				array('data' => l('Rebuild texts (run this after clearing the cache)','admin/shanti_texts/rebuild')),
+			),
 		),
 	);
 	return $build;
@@ -131,11 +148,11 @@ function shanti_texts_admin_rebuild_page() {
     'finished'          => 'shanti_texts_rebuilder_finished',
     'title'             => t('SHANTI Texts Rebuilder'),
     'init_message'      => t('Rebuilder is starting.'),
-    'progress_message'  => t('Processed @current out of @total.'),
+    'progress_message'  => t('Processed @current out of @total batch operations.'),
     'error_message'     => t('SHANTI Texts Rebuilder has encountered an error.'),    
   );
   batch_set($batch);
-  batch_process("alltexts"); // Run the batch and then redirect to 'alltexts'
+  batch_process("admin/content/book/shanti_texts");
 }
 
 function shanti_texts_rebuild_books(&$context) {
@@ -144,13 +161,13 @@ function shanti_texts_rebuild_books(&$context) {
     $context['sandbox']['current_node'] = 0;
     $rs = db_query("SELECT bid FROM {book} WHERE bid = nid");
     while ($r = $rs->fetchObject()) { $context['results']['bids'][] = $r->bid; }
-    $context['sandbox']['max'] = count($context['results']['bids']);
+    $context['results']['max'] = count($context['results']['bids']);
     $context['results']['processed'] = 0;
   }
-  $count = 100;
+  $count = 10;
 	$bid_count = count($context['results']['bids']);
 	if ($bid_count < $count) { $count = $bid_count; }
-	$context['message'] = t("Processing next $count of $bid_count nodes.");
+	$context['message'] = t("Processed " . $context['sandbox']['progress'] . " of " . $context['results']['max'] . " nodes.");
   for ($i = 0; $i < $count; $i++) {
     $bid = array_shift($context['results']['bids']); 
 		$node = node_load($bid);
@@ -160,14 +177,14 @@ function shanti_texts_rebuild_books(&$context) {
     $context['sandbox']['progress']++;
     $context['results']['processed']++;
   }
-  if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
-    $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
-  }
+  if ($context['sandbox']['progress'] != $context['results']['max']) {
+    $context['finished'] = $context['sandbox']['progress'] / $context['results']['max'];
+  } 
 }
 
 function shanti_texts_rebuilder_finished($success, $results, $operations) {
   if ($success) {
-    $message = $results['processed'] . ' nodes rebuilt.';
+    $message = $results['processed'] . ' of ' . $results['max'] . ' nodes rebuilt.';
     drupal_set_message($message);
   } else {
     $error_operation = reset($operations);
