@@ -53,17 +53,6 @@ function shanti_texts_menu() {
       'type' => MENU_CALLBACK,
       'access arguments' => array('access content'),    
     ),
-    /*
-      $items['admin/content/book/settings'] = array(
-    'title' => 'Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('book_admin_settings'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 8,
-    'file' => 'book.admin.inc',
-  );
-	*/
     'admin/content/book/shanti_texts' => array(
     	'title' => 'SHANTI Texts',
     	'page callback' => 'shanti_texts_admin_page',
