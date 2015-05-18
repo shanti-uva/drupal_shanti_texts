@@ -424,7 +424,7 @@ function shanti_texts_preprocess_node(&$vars) {
       '#theme' => 'item_list',
       '#type' => 'ul',
       '#items' => array(
-        l(t('View in PubReader'), "book_pubreader/$bid", array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader'))),
+        l(t('View in PubReader'), "book_pubreader/$bid", array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader', 'target' => '_blank'))),
         l(t('View in Voyant'), "shanti_texts/voyant/$bid", array('attributes'  => array('class' => array(), 'title' => 'View book in Voyant tools', 'target' => '_blank'))),
       ),
     );
