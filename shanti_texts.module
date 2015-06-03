@@ -160,7 +160,7 @@ function shanti_texts_rebuild_books(&$context) {
   $context['message'] = t("Rebuilt " . $context['sandbox']['progress'] . " of " . $context['results']['max'] . " texts.");
   for ($i = 0; $i < $count; $i++) {
     $bid = array_shift($context['results']['bids']); 
-		shanti_texts_clear_cache_text($bid, $rebuild = true);
+		shanti_texts_clear_cache_text($bid, true, false);
     $context['sandbox']['current_node'] = $bid;
     $context['sandbox']['progress']++;
     $context['results']['processed']++;
@@ -224,7 +224,7 @@ function shanti_texts_book_submit_callback($form, &$form_state) {
   shanti_texts_clear_cache_text($bid, true);  
 }
 
-function shanti_texts_clear_cache_text($bid, $rebuild = false) {
+function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
     cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
     cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
   	$message = "All caches cleared for this text";
@@ -235,7 +235,9 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false) {
 			shanti_texts_get_whole_toc($book);
 			$message .= "  and text rebuilt";
 		}
-    drupal_set_message($message.".");
+		if ($debug) {
+	    drupal_set_message($message.".");
+	  }
 }
 
 function shanti_texts_node_insert($node) {
