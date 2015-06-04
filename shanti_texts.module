@@ -1,6 +1,6 @@
 <?php 
 
-define('SHANTI_TEXTS_PATH',drupal_get_path('module','shanti_texts'));
+define('SHANTI_TEXTS_PATH', drupal_get_path('module','shanti_texts'));
 
 function shanti_texts_help($path, $arg) {
   if ($path == "admin/help#shanti_texts") {
@@ -137,7 +137,8 @@ function shanti_texts_admin_rebuild_page() {
     'finished'          => 'shanti_texts_rebuilder_finished',
     'title'             => t('SHANTI Texts Rebuilder'),
     'init_message'      => t('Rebuilder is starting.'),
-    'progress_message'  => t('Processed @current out of @total batch operations.'),
+    //'progress_message'  => t('Processed @current out of @total batch operations.'),
+    'progress_message'  => t('Attempting to rebuild all texts.'),
     'error_message'     => t('SHANTI Texts Rebuilder has encountered an error.'),    
   );
   batch_set($batch);
@@ -156,12 +157,10 @@ function shanti_texts_rebuild_books(&$context) {
   $count = 10;
   $bid_count = count($context['results']['bids']);
   if ($bid_count < $count) { $count = $bid_count; }
-  $context['message'] = t("Processed " . $context['sandbox']['progress'] . " of " . $context['results']['max'] . " nodes.");
+  $context['message'] = t("Rebuilt " . $context['sandbox']['progress'] . " of " . $context['results']['max'] . " texts.");
   for ($i = 0; $i < $count; $i++) {
     $bid = array_shift($context['results']['bids']); 
-    $node = node_load($bid);
-    $view = node_view($node,'full');
-    $rendered = drupal_render($view);
+		shanti_texts_clear_cache_text($bid, true, false);
     $context['sandbox']['current_node'] = $bid;
     $context['sandbox']['progress']++;
     $context['results']['processed']++;
@@ -222,30 +221,40 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
 function shanti_texts_book_submit_callback($form, &$form_state) {
   // Hack? At least check of bid exists ...
   $bid = $form_state['build_info']['args'][0]->book['bid']; 
-  shanti_texts_clear_cache_text($bid);  
+  shanti_texts_clear_cache_text($bid, true);  
 }
 
-function shanti_texts_clear_cache_text($bid) {
+function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
     cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
     cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
-    drupal_set_message("All caches cleared for this text.");
+  	$message = "All caches cleared for this text";
+		if ($rebuild) {
+			$node = node_load($bid);
+			$book = $node->book;
+			shanti_texts_get_whole_book($book);
+			shanti_texts_get_whole_toc($book);
+			$message .= "  and text rebuilt";
+		}
+		if ($debug) {
+	    drupal_set_message($message.".");
+	  }
 }
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid']);
+    shanti_texts_clear_cache_text($node->book['bid'], true);
   }  
 }
 
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid']);
+    shanti_texts_clear_cache_text($node->book['bid'], true);
   }
 }
 
 function shanti_texts_node_delete($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid']);
+    shanti_texts_clear_cache_text($node->book['bid'], false);
   }
 }
 
@@ -305,7 +314,7 @@ function shanti_texts_get_whole_toc($book) {
 }
 
 /**
- * This does most of the heavy lifting. Note that is could be replaced by 
+ * This does most of the heavy lifting. Note that this could be replaced by 
  * a Panel, with views for the TOC and Content parts.
  */
 function shanti_texts_preprocess_node(&$vars) {
@@ -316,7 +325,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $nid = $vars['nid'];
     $bid = $vars['book']['bid'];
     if (!$bid) { drupal_set_message("This is not a book yet!"); }
-    elseif ($bid != $nid) { drupal_goto("node/$bid", array('fragment' => "book-node-$nid")); }
+    elseif ($bid != $nid) { drupal_goto("node/$bid", array('query' => array('s' => $_GET['s']), 'fragment' => "book-node-$nid")); }
     $top_mlid = $vars['book']['p1'];
     
     // Get the combined body, TOC, and metadata section
@@ -358,7 +367,8 @@ function shanti_texts_preprocess_node(&$vars) {
     }
 
     // Highlight search hits
-    /*
+    // May want to add parameters for substring searching or not --
+    // basically expose some regex options
     if (isset($_GET['s'])) {
       $s = $_GET['s'];
       $book_body_rendered = preg_replace_callback(
@@ -371,7 +381,6 @@ function shanti_texts_preprocess_node(&$vars) {
         $book_body_rendered,-1,$count
       );
     }
-    */
     
     $vars['content']['shanti_texts_container'] = array(
       '#type' => 'container',
