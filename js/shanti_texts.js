@@ -24,9 +24,10 @@ Drupal.behaviors.shantiTexts = {
     
     // Have to handle display of edit widget here, since it's part of a cached
     // display
-    if (!settings.edit_rights) {
-    	$('.book-edit-menu').hide();
-    }
+    // Also -- settings.edit_rights shows undedefined here ... Not sure why
+    if (Drupal.settings.shantiTexts.edit_rights) {
+    	$('.book-edit-menu').show();
+    } 
     
   },
 
