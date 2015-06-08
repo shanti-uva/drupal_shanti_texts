@@ -22,6 +22,12 @@ Drupal.behaviors.shantiTexts = {
       duration: 10,
     });
     
+    // Have to handle display of edit widget here, since it's part of a cached
+    // display
+    if (!settings.edit_rights) {
+    	$('.book-edit-menu').hide();
+    }
+    
   },
 
   detach: function (context, settings) {
