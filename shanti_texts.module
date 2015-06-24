@@ -369,7 +369,7 @@ function shanti_texts_preprocess_node(&$vars) {
     // Highlight search hits
     // May want to add parameters for substring searching or not --
     // basically expose some regex options
-    if (isset($_GET['s'])) {
+    if (isset($_GET['s']) && !preg_match("/^\s*$/",$_GET['s'])) {
       $s = $_GET['s'];
       $book_body_rendered = preg_replace_callback(
         "/($s)/i",
