@@ -62,7 +62,7 @@
 #shanti-texts-meta  > .book-title,
 #shanti-texts-links > .book-title
 {
-  font-family:"museo-sans-500","Trebuchet MS","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Tahoma,sans-serif;
+  font-family: 'Helvetica Neue',helvetica,arial,sans-serif;
   font-weight:bold;
   font-size:110%;
   margin-bottom:1em;
@@ -80,7 +80,7 @@
 
 #shanti-texts-toc li {
   font-size:12pt;
-  font-family:"museo-sans-500","Trebuchet MS","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Tahoma,sans-serif;
+  font-family: 'Helvetica Neue',helvetica,arial,sans-serif;
 }
 
 #shanti-texts-links {}
@@ -93,12 +93,12 @@
 #shanti-texts-body .book-section li *
 {
   /* font-family: 'droidserif',palatino,'Palatino Linotype',georgia,serif; */
-  font-family: Baskerville, Palatino,'Palatino Linotype',georgia,serif;
+  font-family:'droidserif',palatino,'Palatino Linotype',georgia,serif;
   font-size:16px;
 }
 
 #shanti-texts-body .book-section .bourdieu {
-  font-family: Baskerville, Palatino,'Palatino Linotype',georgia,serif;
+  font-family:'droidserif',palatino,'Palatino Linotype',georgia,serif;
   font-size:14px; 
   border-top:1px solid gray; 
   border-bottom:1px solid gray; 
