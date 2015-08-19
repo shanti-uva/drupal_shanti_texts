@@ -10,9 +10,9 @@
 }
 
 .views-row {
-  float:left;
+  float: left;
   width: 100%;
-  background:white;
+  background: white;
   margin-bottom: 20px;
   padding-right: 20px;
 }
@@ -22,12 +22,11 @@
 }
 
 .views-field-field-general-featured-image img {
-  float:left;
+  float: left;
   margin-right: 25px;
 }
 
 .book-view-card-title {
-
 }
 
 .views-field-field-dc-creator-author-1 {
@@ -41,28 +40,29 @@
 }
 
 ul#view-all-text-switcher {
-  margin: 0; 
-  padding: 0; 
-  list-style-type: none; 
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
   text-align: center;
 }
 
-ul#view-all-text-switcher li { 
-  display: inline; 
+ul#view-all-text-switcher li {
+  display: inline;
 }
 
 /* Not working ... */ 
 .views-exposed-widget {
-  margin: 0; 
-  padding: 0; 
-  list-style-type: none; 
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
   text-align: center;
 }
 
 label, .views-widget, .form-item, input {
-  display: inline; 
+  display: inline;
 }
 
 #shanti-texts-mega-search-results li {
-  font-family: "museo-sans-500","Trebuchet MS","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Tahoma,sans-serif;
+  font-family: "museo-sans-500",Helvetica,Arial,sans-serif;
 } 
+
