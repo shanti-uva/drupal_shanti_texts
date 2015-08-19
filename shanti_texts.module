@@ -325,7 +325,11 @@ function shanti_texts_preprocess_node(&$vars) {
     $nid = $vars['nid'];
     $bid = $vars['book']['bid'];
     if (!$bid) { drupal_set_message("This is not a book yet!"); }
-    elseif ($bid != $nid) { drupal_goto("node/$bid", array('query' => array('s' => $_GET['s']), 'fragment' => "book-node-$nid")); }
+    elseif ($bid != $nid) { 
+    	$s = '';
+	  	if (array_key_exists('s',$_GET)) { $s = $_GET['s']; }
+    	drupal_goto("node/$bid", array('query' => array('s' => $s), 'fragment' => "book-node-$nid")); 
+	  }
     $top_mlid = $vars['book']['p1'];
     
     // Get the combined body, TOC, and metadata section
