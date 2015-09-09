@@ -90,6 +90,10 @@
 #shanti-texts-meta {
 }
 
+#shanti-texts-body .book-section {
+	clear: both;
+}
+
 #shanti-texts-body .book-section p, 
 #shanti-texts-body .book-section p *, 
 #shanti-texts-body .book-section li, 
@@ -99,6 +103,7 @@
   font-size: 16px;
 }
 
+/* PUT THIS IN CKEDITOR ENHANCEMENTS */
 #shanti-texts-body .book-section .bourdieu {
   font-family: 'droidserif',palatino,'Palatino Linotype',georgia,serif;
   font-size: 14px;
