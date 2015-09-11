@@ -126,7 +126,6 @@
 
 #shanti-texts-body .pull-quote-right,
 #shanti-texts-body .pull-quote-left {
-	float:left;
 	width: 45%;
   font-size: 150%;
   border-top: 3px solid gray;
