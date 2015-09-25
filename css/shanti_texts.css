@@ -105,12 +105,49 @@
 
 /* PUT THIS IN CKEDITOR ENHANCEMENTS */
 #shanti-texts-body .book-section .bourdieu {
-  font-family: 'droidserif',palatino,'Palatino Linotype',georgia,serif;
-  font-size: 14px;
+  /* font-family: 'droidserif',palatino,'Palatino Linotype',georgia,serif; */
+  font-size: 95%;
   border-top: 1px solid gray;
   border-bottom: 1px solid gray;
   padding: 1em 1em;
-  margin: 1em 0;
+  /* margin: 1em 0; */
+}
+
+#shanti-texts-body .pull-quote-right {
+	float:right;
+  margin-left: 1em;
+  margin-right: 0;
+}
+#shanti-texts-body  .pull-quote-left {
+	float:left;
+  margin-left: 0;
+  margin-right: 1em;
+}
+
+#shanti-texts-body .pull-quote-right,
+#shanti-texts-body .pull-quote-left {
+	width: 45%;
+  font-size: 150%;
+  border-top: 3px solid gray;
+  border-bottom: 3px solid gray;
+  padding: 1em 0;
+  margin-top: .5em;
+  margin-bottom: .5em;
+}
+
+#shanti-texts-body .image-left,
+#shanti-texts-body .image-right {
+	box-shadow: 5px 5px 10px #AAA;
+}
+
+#shanti-texts-body .image-left {
+	float:left;
+	margin: .5em 1em .5em 0;
+}
+
+#shanti-texts-body .image-right {
+	float:right;
+	margin: .5em 0 .5em 1em;
 }
 
 #shanti-texts-toc li, 

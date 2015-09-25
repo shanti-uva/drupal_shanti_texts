@@ -282,7 +282,7 @@ function theme_whole_toc_html($vars) {
 */
 
 function shanti_texts_get_whole_book($book) {
-  $bid = $book['bid'];
+  $bid = $book['bid'];    
   $shanti_texts_data_book = &drupal_static(__FUNCTION__);
   if (!isset($shanti_texts_data_book[$bid])) {
     if ($cache = cache_get('shanti_texts_data_book' . $bid)) {
@@ -385,6 +385,9 @@ function shanti_texts_preprocess_node(&$vars) {
         $book_body_rendered,-1,$count
       );
     }
+    
+    // Removed gaddammed extra paragraphs 
+    //$book_body_rendered = preg_replace("/<p><\/p>/","",$book_body_rendered);
     
     $vars['content']['shanti_texts_container'] = array(
       '#type' => 'container',
@@ -492,8 +495,12 @@ function shanti_texts_entity_info_alter(&$info) {
  * point.
  */ 
 function shanti_texts_whole_node($node, $children = '') {
+  
   $build = node_view($node, 'whole'); // Depends on view mode define in info_alter hook
-  $node->rendered = drupal_render($build['field_book_content']); // DEPENDS ON CONTENT TYPE
+	// drupal_render is adding a ton of spurious p tags!
+	//$node->rendered = drupal_render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
+	$node->rendered = $build['field_book_content']['#items'][0]['value'];
+	
   $nid = $node->nid;
   $editmenu = NULL;
 	$editmenu = array(
