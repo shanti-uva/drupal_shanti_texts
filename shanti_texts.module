@@ -225,9 +225,11 @@ function shanti_texts_book_submit_callback($form, &$form_state) {
 }
 
 function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
+	$message = '';
+	if ($bid) {
     cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
     cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
-  	$message = "All caches cleared for this text";
+		$message .= "All caches cleared for this text";
 		if ($rebuild) {
 			$node = node_load($bid);
 			$book = $node->book;
@@ -235,9 +237,13 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
 			shanti_texts_get_whole_toc($book);
 			$message .= "  and text rebuilt";
 		}
-		if ($debug) {
-	    drupal_set_message($message.".");
-	  }
+	}
+	else {
+		$message = 'No book defined.';	
+	}
+	if ($debug) {
+		drupal_set_message($message.".");
+	}
 }
 
 function shanti_texts_node_insert($node) {
@@ -335,40 +341,9 @@ function shanti_texts_preprocess_node(&$vars) {
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
-    $book_body_rendered = $shanti_texts_data_book[$bid]; 
-    $shanti_texts_data_toc = shanti_texts_get_whole_toc($book);
-    $book_toc_rendered = $shanti_texts_data_toc[$bid];
-
-    // Fix up rest of fields for metadata display    
-    $meta_build = $vars['content']; 
-    hide($meta_build['book_navigation']);
-    hide($meta_build['comments']);
-    hide($meta_build['title']);
-    hide($meta_build['links']);
-    unset($meta_build['#theme']); 
-    unset($meta_build['#contextual_links']);
-    // Change links to related texts when in embed view mode
-    if ($vars['view_mode'] == 'embed') {
-      $sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
-      $rs = db_query($sql);
-      while ($r = $rs->fetchObject()) {
-        if (array_key_exists($r->field_name,$meta_build)) {
-          foreach ($meta_build[$r->field_name] as $i => $inf) {
-            if (is_numeric($i)) {
-              foreach ($inf['info_popover']['#links'] as $key => $val) {
-                if (preg_match("/Related Texts/", $key)) {
-                  $kid = $meta_build[$r->field_name]['#items'][$i]['id'];
-                  $domain = $meta_build[$r->field_name]['#items'][$i]['domain'];
-                  $href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
-                  $meta_build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
-                  $meta_build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
-                }
-              }
-            }
-          }     
-        }
-      }       
-    }
+    $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
+    $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
+    $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -386,9 +361,8 @@ function shanti_texts_preprocess_node(&$vars) {
       );
     }
     
-    // Removed gaddammed extra paragraphs 
-    //$book_body_rendered = preg_replace("/<p><\/p>/","",$book_body_rendered);
-    
+		// Build the render array for the page
+		
     $vars['content']['shanti_texts_container'] = array(
       '#type' => 'container',
       '#attributes' => array('id' => 'shanti-texts-container'),
@@ -479,11 +453,11 @@ function shanti_texts_preprocess_node(&$vars) {
 // Actually had to create these by hand in the site
 function shanti_texts_entity_info_alter(&$info) {
   $info['node']['view modes']['whole'] = array(
-    'label' => t('Whole'),
+    'label' => t('Whole Book'),
     'custom settings' => TRUE,
   );
   $info['node']['view modes']['embed'] = array(
-    'label' => t('Embed'),
+    'label' => t('Embedded'),
     'custom settings' => TRUE,
   );
 }
@@ -495,12 +469,14 @@ function shanti_texts_entity_info_alter(&$info) {
  * point.
  */ 
 function shanti_texts_whole_node($node, $children = '') {
+
+  $build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
   
-  $build = node_view($node, 'whole'); // Depends on view mode define in info_alter hook
-	// drupal_render is adding a ton of spurious p tags!
-	//$node->rendered = drupal_render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
-	$node->rendered = $build['field_book_content']['#items'][0]['value'];
-	
+	//$node->rendered = render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
+	// drupal_render() above is adding a ton of spurious p tags!
+	// So, we replace it with this:
+  $node->rendered = check_markup($build['field_book_content']['#items'][0]['value'],'full_html');
+  	
   $nid = $node->nid;
   $editmenu = NULL;
 	$editmenu = array(
@@ -539,6 +515,7 @@ function shanti_texts_whole_node($node, $children = '') {
     '#children' => $children,
     '#editmenu' => $editmenu,
   );
+  watchdog_array('t','y',$new_build);
   return drupal_render($new_build);
 }
 
