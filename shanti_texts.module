@@ -514,7 +514,7 @@ function shanti_texts_whole_node($node, $children = '') {
     '#children' => $children,
     '#editmenu' => $editmenu,
   );
-  watchdog_array('SHANTI','new_build',$new_build);
+  watchdog_array('SHANTI','y',$new_build);
   return drupal_render($new_build);
 }
 
