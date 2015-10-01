@@ -345,39 +345,6 @@ function shanti_texts_preprocess_node(&$vars) {
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
 
-    /*
-    // Fix up rest of fields for metadata display    
-    $meta_build = $vars['content']; 
-    hide($meta_build['book_navigation']);
-    hide($meta_build['comments']);
-    hide($meta_build['title']);
-    hide($meta_build['links']);
-    unset($meta_build['#theme']); 
-    unset($meta_build['#contextual_links']);
-    // Change links to related texts when in embed view mode
-    if ($vars['view_mode'] == 'embed') {
-      $sql = "SELECT field_name FROM {field_config} WHERE type = 'shanti_kmaps_fields_default'";
-      $rs = db_query($sql);
-      while ($r = $rs->fetchObject()) {
-        if (array_key_exists($r->field_name,$meta_build)) {
-          foreach ($meta_build[$r->field_name] as $i => $inf) {
-            if (is_numeric($i)) {
-              foreach ($inf['info_popover']['#links'] as $key => $val) {
-                if (preg_match("/Related Texts/", $key)) {
-                  $kid = $meta_build[$r->field_name]['#items'][$i]['id'];
-                  $domain = $meta_build[$r->field_name]['#items'][$i]['domain'];
-                  $href = preg_replace("/__KMAPID__/", $kid .'/texts', variable_get('shanti_kmaps_admin_server_'.$domain.'_explorer'));
-                  $meta_build[$r->field_name][$i]['info_popover']['#links'][$key]['href'] = $href;
-                  $meta_build[$r->field_name][$i]['info_popover']['#links'][$key]['external'] = 1;
-                }
-              }
-            }
-          }     
-        }
-      }       
-    }
-    */
-
     // Highlight search hits
     // May want to add parameters for substring searching or not --
     // basically expose some regex options
@@ -506,7 +473,6 @@ function shanti_texts_whole_node($node, $children = '') {
   $build = node_view($node, 'whole'); // Depends on view mode define in info_alter hook
 	// drupal_render is adding a ton of spurious p tags!
 	$node->rendered = render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
-	watchdog_array('SHANTI','by render()',$node->rendered);
 	//$node->rendered = $build['field_book_content']['#items'][0]['value'];
 	
   $nid = $node->nid;
