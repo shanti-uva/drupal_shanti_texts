@@ -288,7 +288,6 @@ function theme_whole_toc_html($vars) {
 */
 
 function shanti_texts_get_whole_book($book) {
-	watchdog_array('SHANTI','book',$book);
   $bid = $book['bid'];    
   $shanti_texts_data_book = &drupal_static(__FUNCTION__);
   if (!isset($shanti_texts_data_book[$bid])) {
@@ -340,7 +339,6 @@ function shanti_texts_preprocess_node(&$vars) {
     $top_mlid = $vars['book']['p1'];
     
     // Get the combined body, TOC, and metadata section
-    watchdog_array('SHANTI','shanti_texts_preprocess_node',$vars);
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
