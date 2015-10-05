@@ -354,7 +354,8 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
-		kpr($vars);
+		$t = node_view($vars['node'], 'whole');
+		kpr($t);
     
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
@@ -364,7 +365,6 @@ function shanti_texts_preprocess_node(&$vars) {
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
     
     //$shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
-    
     hide($vars['content']['comments']);
     hide($vars['content']['links']);
     hide($vars['content']['book_navigation']);
