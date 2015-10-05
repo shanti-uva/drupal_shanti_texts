@@ -476,6 +476,8 @@ function shanti_texts_entity_info_alter(&$info) {
  */ 
 function shanti_texts_whole_node($node, $children = '') {
 
+	// SCREW THE VIEW MODE
+	watchdog_array('x','node',$node);
   //$build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
   $build = node_view($node, 'full'); // Depends on the view mode defined in info_alter hook  
   
