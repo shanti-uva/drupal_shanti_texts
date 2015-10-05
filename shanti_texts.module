@@ -353,6 +353,8 @@ function shanti_texts_preprocess_node(&$vars) {
     	drupal_goto("node/$bid", array('query' => array('s' => $s), 'fragment' => "book-node-$nid")); 
 	  }
     $top_mlid = $vars['book']['p1'];
+
+		watchdog_array('x','book',$vars['book']);
     
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
