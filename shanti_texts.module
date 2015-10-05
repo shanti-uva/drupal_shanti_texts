@@ -354,16 +354,19 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
-		//kpr($vars);
+		kpr($vars);
     
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
-    //$shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
-    $book_meta_rendered 		= render($vars['content']); //$shanti_texts_data_meta[$bid];
+    
+    //$shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
+    
+    hide($vars['content']);
+    $book_meta_rendered 		= drupal_render($vars['content']); //$shanti_texts_data_meta[$bid];
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
