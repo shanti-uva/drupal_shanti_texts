@@ -405,9 +405,9 @@ function shanti_texts_preprocess_node(&$vars) {
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
-      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div><div class="shanti-texts-meta-fields">',
+      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
       '#markup' => $book_meta_rendered, 
-      '#suffix' => '</div>',
+      '#suffix' => '',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
       '#type' => 'container',
