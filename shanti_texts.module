@@ -476,13 +476,14 @@ function shanti_texts_entity_info_alter(&$info) {
  */ 
 function shanti_texts_whole_node($node, $children = '') {
 
-  $build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
-  //$build = node_view($node, 'full'); // Depends on the view mode defined in info_alter hook  
+  //$build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
+  $build = node_view($node, 'full'); // Depends on the view mode defined in info_alter hook  
   
 	//$node->rendered = render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
 	// drupal_render() above is adding a ton of spurious p tags!
 	// So, we replace it with this:
   $node->rendered = check_markup($build['field_book_content']['#items'][0]['value'],'full_html');
+  
   	
   $nid = $node->nid;
   $editmenu = NULL;
