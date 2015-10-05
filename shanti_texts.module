@@ -344,6 +344,8 @@ function shanti_texts_preprocess_node(&$vars) {
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
+    
+    $meta_build = node_view($nid,'whole');
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -400,7 +402,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
       '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-      '#markup' => 'BOO', //drupal_render($meta_build), 
+      '#markup' => drupal_render($meta_build), 
       '#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
