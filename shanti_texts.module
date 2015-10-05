@@ -354,6 +354,7 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
+		kpr($vars);
 		watchdog_array('x','book',$vars['book']);
     
     // Get the combined body, TOC, and metadata section
