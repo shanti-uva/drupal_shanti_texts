@@ -365,7 +365,9 @@ function shanti_texts_preprocess_node(&$vars) {
     
     //$shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
     
-    hide($vars['content']);
+    hide($vars['content']['comments']);
+    hide($vars['content']['links']);
+    hide($vars['content']['book_navigation']);
     $book_meta_rendered 		= drupal_render($vars['content']); //$shanti_texts_data_meta[$bid];
 
     // Highlight search hits
