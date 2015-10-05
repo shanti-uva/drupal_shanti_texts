@@ -338,17 +338,18 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
-    // Get the combined body, TOC, and metadata section
+    // Get the combined body and TOC
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
     
+    // Get metadata section -- note, no view mode here
     hide($vars['content']['comments']);
     hide($vars['content']['links']);
     hide($vars['content']['book_navigation']);
-    $book_meta_rendered 		= drupal_render($vars['content']); //$shanti_texts_data_meta[$bid];
+    $book_meta_rendered = drupal_render($vars['content']);
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -404,7 +405,7 @@ function shanti_texts_preprocess_node(&$vars) {
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
-      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
+      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div><div class="shanti-texts-meta-fields">',
       '#markup' => $book_meta_rendered, 
       '#suffix' => '</div>',
     );
