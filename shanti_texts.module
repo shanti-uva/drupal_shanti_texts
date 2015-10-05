@@ -354,8 +354,8 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
-		$t = render(node_view($vars['node'], 'whole'));
-		kpr($t);
+		$t = node_view($vars['node'], 'whole');
+		//kpr($t);
     
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
@@ -425,7 +425,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
       '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-      '#markup' => $book_meta_rendered, 
+      '#markup' => $t; //$book_meta_rendered, 
       '#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
