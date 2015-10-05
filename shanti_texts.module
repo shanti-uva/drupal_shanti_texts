@@ -349,7 +349,7 @@ function shanti_texts_preprocess_node(&$vars) {
     hide($vars['content']['comments']);
     hide($vars['content']['links']);
     hide($vars['content']['book_navigation']);
-    $book_meta_rendered = drupal_render($vars['content']);
+    $book_meta_rendered = render($vars['content']);
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
