@@ -358,10 +358,10 @@ function shanti_texts_preprocess_node(&$vars) {
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
-    $shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
+    //$shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
-    $book_meta_rendered 		= $shanti_texts_data_meta[$bid];
+    $book_meta_rendered 		= 'BOO'; //$shanti_texts_data_meta[$bid];
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -534,7 +534,6 @@ function shanti_texts_whole_node($node, $children = '') {
     '#children' => $children,
     '#editmenu' => $editmenu,
   );
-  watchdog_array('t','y',$new_build);
   return drupal_render($new_build);
 }
 
