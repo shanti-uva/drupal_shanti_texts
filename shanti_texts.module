@@ -345,6 +345,8 @@ function shanti_texts_preprocess_node(&$vars) {
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
     
+    kpr($shanti_texts_data_book);
+    
     // Get metadata section -- note, no view mode here
     hide($vars['content']['comments']);
     hide($vars['content']['links']);
