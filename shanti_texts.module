@@ -319,6 +319,22 @@ function shanti_texts_get_whole_toc($book) {
   return $shanti_texts_data_toc;
 }
 
+function shanti_texts_get_whole_meta($book) {
+  $bid = $book['bid'];
+  $shanti_texts_data_meta = &drupal_static(__FUNCTION__);
+  if (!isset($shanti_texts_data_meta[$bid])) {
+    if ($cache = cache_get('shanti_texts_data_meta' . $bid)) {
+      $shanti_texts_data_meta[$bid] = $cache->data;
+    }
+    else {
+    	$node = node_load($bid);
+      $shanti_texts_data_meta[$bid] = drupal_render(node_view($node,'whole'));
+      cache_set('shanti_texts_data_meta' . $bid, $shanti_texts_data_meta[$bid], 'cache');
+    }
+  }
+  return $shanti_texts_data_meta;
+}
+
 /**
  * This does most of the heavy lifting. Note that this could be replaced by 
  * a Panel, with views for the TOC and Content parts.
@@ -341,11 +357,11 @@ function shanti_texts_preprocess_node(&$vars) {
     // Get the combined body, TOC, and metadata section
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
-    $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
+    $shanti_texts_data_meta = shanti_texts_get_whole_meta($book);
+    $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
-    
-    $meta_build = node_view($vars['node'],'whole');
+    $book_meta_rendered 		= $shanti_texts_data_meta[$bid];
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -402,7 +418,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
       '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-      '#markup' => drupal_render($meta_build), 
+      '#markup' => $book_meta_rendered, 
       '#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
