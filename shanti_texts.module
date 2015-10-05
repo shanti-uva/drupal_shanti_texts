@@ -345,9 +345,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
     
-    watchdog_array('x','vars',$vars);
-    $node = node_load($nid);
-    $meta_build = node_view($node,'whole');
+    $meta_build = node_view(vars['node'],'whole'); // 
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
