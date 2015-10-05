@@ -400,7 +400,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
       '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
-      '#markup' => drupal_render($meta_build), 
+      '#markup' => 'BOO', //drupal_render($meta_build), 
       '#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
