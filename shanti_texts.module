@@ -345,7 +345,9 @@ function shanti_texts_preprocess_node(&$vars) {
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
         
-    // Get metadata section -- note, no view mode here
+    // Get metadata section -- note that the view mode is "full", 
+    // so set this view to contain the fields you want. However, 
+    // the following items are always blocked:
     kpr($vars);
     hide($vars['content']['comments']);
     hide($vars['content']['links']);
@@ -478,6 +480,7 @@ function shanti_texts_entity_info_alter(&$info) {
  */ 
 function shanti_texts_whole_node($node, $children = '') {
 
+	// Grab the whole view -- really does not matter though; just make sure content is visible
   $build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
   
 	//$node->rendered = render($build['field_book_content']); // DEPENDS ON CONTENT TYPE!
