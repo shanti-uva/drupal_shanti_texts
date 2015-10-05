@@ -346,9 +346,9 @@ function shanti_texts_preprocess_node(&$vars) {
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
     
     // Get metadata section -- note, no view mode here
-    #hide($vars['content']['comments']);
-    #hide($vars['content']['links']);
-    #hide($vars['content']['book_navigation']);
+    hide($vars['content']['comments']);
+    hide($vars['content']['links']);
+    hide($vars['content']['book_navigation']);
     $book_meta_rendered = render($vars['content']);
 
     // Highlight search hits
@@ -407,7 +407,7 @@ function shanti_texts_preprocess_node(&$vars) {
       '#type'   => 'markup',
       '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
       '#markup' => $book_meta_rendered, 
-      '#suffix' => '',
+      '#suffix' => '</div>',
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links'] = array(
       '#type' => 'container',
