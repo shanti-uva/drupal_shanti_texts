@@ -222,6 +222,7 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
     // Check if this is the form for a book child page
     // If so, hide some things
+    // DEPENDENCY ALERT -- Hidden fields here are hand made in content type def
     $nid = $form['nid']['#value'];
     $bid = $form['#node']->book['bid'];
     if ($nid != $bid) {
