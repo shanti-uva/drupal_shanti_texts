@@ -248,14 +248,34 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid'], true);
+		_shanti_texts_book_update_or_insert($node);
   }  
 }
 
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid'], true);
-  }
+		_shanti_texts_book_update_or_insert($node);
+	}
+}
+
+function _shanti_texts_book_update_or_insert($node) {
+	// Case: Not a book parent, but a child  
+	if ($node->nid != $node->book['bid']) {
+		$book = node_load($node->book['bid']);
+		$lang = $node->language;
+		$node->og_group_ref[$lang][0]['target_id'] = $book->og_group_ref[$lang][0]['target_id'];
+		field_attach_update('node', $node);
+	}
+	// Case: Parent 
+	else {
+		$sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
+		$rs = db_query($sql,array(':bid' => $node->nid));
+		while ($r = $rs->fetchObject()) {
+			$this_node = node_load($r->nid);
+			node_save($this_node);
+		}
+	}
+	shanti_texts_clear_cache_text($node->book['bid'], true);
 }
 
 function shanti_texts_node_delete($node) {
@@ -459,7 +479,6 @@ function shanti_texts_preprocess_node(&$vars) {
   }
 }
 
-// Actually had to create these by hand in the site
 function shanti_texts_entity_info_alter(&$info) {
   $info['node']['view modes']['whole'] = array(
     'label' => t('Whole Book'),
