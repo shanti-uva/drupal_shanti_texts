@@ -202,7 +202,12 @@ function shanti_texts_menu_alter(&$items) {
 
 function shanti_texts_edit_tab_title($node) {
   if ($node->type == 'book') {
-    return t('Edit Top Text Section');
+  	if ($node->book['nid'] == $node->book['bid']) {
+	    return t('Edit Top Section');
+	  }
+	  else {
+	    return t('Edit Child Section');	  
+	  }
   }
   return t('Edit');
 }
@@ -215,7 +220,6 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
   elseif ($form_id == 'book_node_form') {
     $form['actions']['submit']['#value']  = 'Save text section';
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
-
     // Check if this is the form for a book child page
     // If so, hide some things
     $nid = $form['nid']['#value'];
@@ -223,9 +227,11 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     if ($nid != $bid) {
 	    hide($form['og_group_ref']);
 	    hide($form['field_general_featured_image']);
+	    unset($form['#groups']['group_book_admin']);
+	    unset($form['#fieldgroups']['group_book_admin']);
+	    unset($form['#groups']['group_book_metadata']);
+	    unset($form['#fieldgroups']['group_book_metadata']);
 	  }
-    #watchdog_array('SHANTI','form',$form);
-    #watchdog_array('SHANTI','form_state',$form_state);
   } 
 }
 
