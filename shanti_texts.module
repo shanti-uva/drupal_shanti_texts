@@ -215,6 +215,17 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
   elseif ($form_id == 'book_node_form') {
     $form['actions']['submit']['#value']  = 'Save text section';
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
+
+    // Check if this is the form for a book child page
+    // If so, hide some things
+    $nid = $form['nid']['#value'];
+    $bid = $form['#node']->book['bid'];
+    if ($nid != $bid) {
+	    hide($form['og_group_ref']);
+	    hide($form['field_general_featured_image']);
+	  }
+    #watchdog_array('SHANTI','form',$form);
+    #watchdog_array('SHANTI','form_state',$form_state);
   } 
 }
 
