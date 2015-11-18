@@ -222,16 +222,13 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $form['#submit'][] = 'shanti_texts_book_submit_callback';  
     // Check if this is the form for a book child page
     // If so, hide some things
-    // DEPENDENCY ALERT -- Hidden fields here are hand made in content type def
+    // DEPENDENCY ALERT -- Hidden fields and groups here are hand made in content type def!
     $nid = $form['nid']['#value'];
     $bid = $form['#node']->book['bid'];
     if ($nid != $bid) {
-	    hide($form['og_group_ref']);
-	    hide($form['field_general_featured_image']);
-	    unset($form['#groups']['group_book_admin']);
-	    unset($form['#fieldgroups']['group_book_admin']);
-	    unset($form['#groups']['group_book_metadata']);
-	    unset($form['#fieldgroups']['group_book_metadata']);
+	    hide($form['field_og_collection_ref']);       	
+     	hide($form['field_general_featured_image']);
+      field_group_hide_field_groups($form, array('group_collection','group_book_metadata','group_book_admin'));      
 	  }
   } 
 }
@@ -266,31 +263,50 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
-		_shanti_texts_book_update_or_insert($node);
+		_shanti_texts_book_update_or_insert($node,'insert');
   }  
 }
 
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
-		_shanti_texts_book_update_or_insert($node);
+		_shanti_texts_book_update_or_insert($node,'update');
 	}
 }
 
-function _shanti_texts_book_update_or_insert($node) {
+function _shanti_texts_book_update_or_insert($node,$mode) {
 	// Case: Not a book parent, but a child  
 	if ($node->nid != $node->book['bid']) {
 		$book = node_load($node->book['bid']);
 		$lang = $node->language;
-		$node->og_group_ref[$lang][0]['target_id'] = $book->og_group_ref[$lang][0]['target_id'];
-		field_attach_update('node', $node);
+    if (isset($book->field_og_collection_ref)) { // Depends on collection field
+      $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];    
+    }
+    if ($mode == 'insert') {
+      field_attach_insert('node', $node);
+    } elseif ($mode = 'update') {
+      field_attach_update('node', $node);      
+    } else {
+      // What?!
+    }
 	}
 	// Case: Parent 
 	else {
 		$sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
 		$rs = db_query($sql,array(':bid' => $node->nid));
 		while ($r = $rs->fetchObject()) {
-			$this_node = node_load($r->nid);
-			node_save($this_node);
+			$this_node = node_load($r->nid);      
+			#node_save($this_node);
+			$lang = $this_node->language;
+      if (isset($node->field_og_collection_ref)) { // Depends on collection field
+        $this_node->field_og_collection_ref[$lang][0]['target_id'] = $node->field_og_collection_ref[$lang][0]['target_id'];    
+      }
+      if ($mode == 'insert') {
+        field_attach_insert('node', $this_node);
+      } elseif ($mode = 'update') {
+        field_attach_update('node', $this_node);      
+      } else {
+        // What?!
+      }
 		}
 	}
 	shanti_texts_clear_cache_text($node->book['bid'], true);
