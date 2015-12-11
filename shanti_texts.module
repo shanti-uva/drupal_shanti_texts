@@ -174,7 +174,8 @@ function shanti_texts_rebuilder_finished($success, $results, $operations) {
   if ($success) {
     $message = $results['processed'] . ' of ' . $results['max'] . ' nodes rebuilt.';
     drupal_set_message($message);
-  } else {
+  } 
+  else {
     $error_operation = reset($operations);
     $message = t('An error occurred while processing %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
     drupal_set_message($message, 'error');
@@ -226,97 +227,116 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     $nid = $form['nid']['#value'];
     $bid = $form['#node']->book['bid'];
     if ($nid != $bid) {
-	    hide($form['field_og_collection_ref']);       	
-     	hide($form['field_general_featured_image']);
+      hide($form['field_og_collection_ref']);       	
+      hide($form['field_general_featured_image']);
       field_group_hide_field_groups($form, array('group_collection','group_book_metadata','group_book_admin'));      
-	  }
+    }
   } 
 }
 
 function shanti_texts_book_submit_callback($form, &$form_state) {
   // Hack? At least check of bid exists ...
   $bid = $form_state['build_info']['args'][0]->book['bid']; 
-  shanti_texts_clear_cache_text($bid, true);  
+  shanti_texts_clear_cache_text($bid, true);
 }
 
 function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
-	$message = '';
-	if ($bid) {
+  $message = '';
+  if ($bid) {
     cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
     cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
-		$message .= "All caches cleared for this text";
-		if ($rebuild) {
-			$node = node_load($bid);
-			$book = $node->book;
-			shanti_texts_get_whole_book($book);
-			shanti_texts_get_whole_toc($book);
-			$message .= "  and text rebuilt";
-		}
-	}
-	else {
-		$message = 'No book defined.';	
-	}
-	if ($debug) {
-		drupal_set_message($message.".");
-	}
+    $message .= "All caches cleared for this text";
+    if ($rebuild) {
+      $node = node_load($bid);
+      $book = $node->book;
+      shanti_texts_get_whole_book($book);
+      shanti_texts_get_whole_toc($book);
+      $message .= "  and text rebuilt";
+    }
+  }
+  else {
+    $message = 'No book defined.';	
+  }
+  if ($debug) {
+    drupal_set_message($message.".");
+  }
 }
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
-		_shanti_texts_book_update_or_insert($node,'insert');
+    _shanti_texts_book_update_or_insert($node,'insert');
   }  
 }
 
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
-		_shanti_texts_book_update_or_insert($node,'update');
-	}
+    _shanti_texts_book_update_or_insert($node,'update');
+  }
 }
 
-function _shanti_texts_book_update_or_insert($node,$mode) {
-	// Case: Not a book parent, but a child  
-	if ($node->nid != $node->book['bid']) {
-		$book = node_load($node->book['bid']);
-		$lang = $node->language;
+function _shanti_texts_book_update_or_insert($node,$op) {
+
+  // THIS BREAKS THINGS WHEN SPLITTER IS ENABLED :-(
+  // Case: Child  
+  if ($node->nid != $node->book['bid'] && $node->book['nid'] != 'new') {
+    $book = node_load($node->book['bid']);
+    $lang = $node->language;
     if (isset($book->field_og_collection_ref)) { // Depends on collection field
       $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];    
     }
-    if ($mode == 'insert') {
+    if ($op == 'insert') {
       field_attach_insert('node', $node);
-    } elseif ($mode = 'update') {
+    } 
+    elseif ($op = 'update') {
       field_attach_update('node', $node);      
-    } else {
-      // What?!
+    } 
+  }
+  
+  // Case: Parent 
+  elseif ($node->book['nid'] != 'new') {
+    if ($op == 'update') {
+      $sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
+      $rs = db_query($sql,array(':bid' => $node->nid));
+      while ($r = $rs->fetchObject()) {
+	$this_node = node_load($r->nid);      
+	$lang = $this_node->language;
+	if (isset($node->field_og_collection_ref)) { // Depends on collection field
+	  $this_node->field_og_collection_ref[$lang][0]['target_id'] = $node->field_og_collection_ref[$lang][0]['target_id'];    
+	}
+	field_attach_update('node', $this_node);      
+      }
     }
-	}
-	// Case: Parent 
-	else {
-		$sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
-		$rs = db_query($sql,array(':bid' => $node->nid));
-		while ($r = $rs->fetchObject()) {
-			$this_node = node_load($r->nid);      
-			#node_save($this_node);
-			$lang = $this_node->language;
-      if (isset($node->field_og_collection_ref)) { // Depends on collection field
-        $this_node->field_og_collection_ref[$lang][0]['target_id'] = $node->field_og_collection_ref[$lang][0]['target_id'];    
-      }
-      if ($mode == 'insert') {
-        field_attach_insert('node', $this_node);
-      } elseif ($mode = 'update') {
-        field_attach_update('node', $this_node);      
-      } else {
-        // What?!
-      }
-		}
-	}
-	shanti_texts_clear_cache_text($node->book['bid'], true);
+    else {
+      // Do nothing -- It's a new book or a book with no children
+    }
+  }
+  
 }
 
 function shanti_texts_node_delete($node) {
   if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid'], false);
+    //shanti_texts_clear_cache_text($node->book['bid'], false);
   }
 }
+
+/*
+function shanti_texts_node_presave($node) {
+  if ($node->type == 'book') {
+    // Get collection of the parent book -- don't worry if this is a parent
+    //$book = node_load($node->book['bid']);
+    //watchdog_array('SHANTI','presave',$node);
+  }
+}
+*/
+
+// This is still expensive, since it does this for each child!
+// Should try to figure out if last or something
+function shanti_texts_node_postsave($node,$op) {
+  if ($node->type == 'book') {
+    shanti_texts_clear_cache_text($node->book['bid'], true);
+   }
+}
+
 
 function theme_whole_node_html($vars) {
   $depth    = $vars['node']->book['depth'];
@@ -378,7 +398,7 @@ function shanti_texts_get_whole_toc($book) {
  * a Panel, with views for the TOC and Content parts.
  */
 function shanti_texts_preprocess_node(&$vars) {
-
+  
   if ($vars['type'] == 'book' && $vars['teaser'] == FALSE) {
     
     // If not top of book, redirect to the book
