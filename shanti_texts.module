@@ -229,7 +229,7 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     if ($nid != $bid) {
       hide($form['field_og_collection_ref']);       	
       hide($form['field_general_featured_image']);
-      field_group_hide_field_groups($form, array('group_collection','group_book_metadata','group_book_admin'));      
+      field_group_hide_field_groups($form, array('group_collection','group_book_metadata','group_book_admin'));
     }
   } 
 }
@@ -262,6 +262,15 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
   }
 }
 
+function shanti_texts_node_submit($node, $form, &$form_state){
+  watchdog_array('SHANTI','node_submit',$node);
+}
+
+
+function shanti_texts_node_presave($node) {
+  watchdog_array('SHANTI','node_presave',$node);
+}
+
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
     _shanti_texts_book_update_or_insert($node,'insert');
@@ -276,41 +285,42 @@ function shanti_texts_node_update($node) {
 
 function _shanti_texts_book_update_or_insert($node,$op) {
 
-  // THIS BREAKS THINGS WHEN SPLITTER IS ENABLED :-(
-  // Case: Child  
-  if ($node->nid != $node->book['bid'] && $node->book['nid'] != 'new') {
+  if (empty($node->nid)) {
+     // Should not happen at this point (apparently) 
+  }
+  // Case: Child; set collection to parent's
+  elseif ($node->nid != $node->book['bid']) {
     $book = node_load($node->book['bid']);
     $lang = $node->language;
     if (isset($book->field_og_collection_ref)) { // Depends on collection field
-      $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];    
+      $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];
+      #if ($op == 'insert') {
+      #  field_attach_insert('node', $node); # THIS CREATES AN INTEGRITY CONSTRAINT
+      #} 
+      #elseif ($op == 'update') {
+        field_attach_update('node', $node);      
+      #} 
     }
-    if ($op == 'insert') {
-      field_attach_insert('node', $node);
-    } 
-    elseif ($op = 'update') {
-      field_attach_update('node', $node);      
-    } 
   }
-  
-  // Case: Parent 
-  elseif ($node->book['nid'] != 'new') {
+  // Case: Parent; set childrens' collections to parent's
+  elseif ($node->nid == $node->book['bid']) {
+    watchdog_array('SHANTI',"$op child",$node);
     if ($op == 'update') {
       $sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
       $rs = db_query($sql,array(':bid' => $node->nid));
       while ($r = $rs->fetchObject()) {
-	$this_node = node_load($r->nid);      
-	$lang = $this_node->language;
-	if (isset($node->field_og_collection_ref)) { // Depends on collection field
-	  $this_node->field_og_collection_ref[$lang][0]['target_id'] = $node->field_og_collection_ref[$lang][0]['target_id'];    
-	}
-	field_attach_update('node', $this_node);      
+      	$this_node = node_load($r->nid);      
+      	$lang = $this_node->language;
+      	if (isset($node->field_og_collection_ref)) { // Depends on collection field
+      	  $this_node->field_og_collection_ref[$lang][0]['target_id'] = $node->field_og_collection_ref[$lang][0]['target_id'];    
+      	  field_attach_update('node', $this_node);
+        }    
       }
     }
-    else {
-      // Do nothing -- It's a new book or a book with no children
-    }
   }
-  
+  else {
+    watchdog_array('SHANTI',"$op else",$node);     
+  }
 }
 
 function shanti_texts_node_delete($node) {
@@ -319,20 +329,11 @@ function shanti_texts_node_delete($node) {
   }
 }
 
-/*
-function shanti_texts_node_presave($node) {
-  if ($node->type == 'book') {
-    // Get collection of the parent book -- don't worry if this is a parent
-    //$book = node_load($node->book['bid']);
-    //watchdog_array('SHANTI','presave',$node);
-  }
-}
-*/
-
 // This is still expensive, since it does this for each child!
 // Should try to figure out if last or something
 function shanti_texts_node_postsave($node,$op) {
   if ($node->type == 'book') {
+    watchdog_array('SHANTI', "node_postsave $op", $node);
     shanti_texts_clear_cache_text($node->book['bid'], true);
    }
 }
@@ -418,7 +419,7 @@ function shanti_texts_preprocess_node(&$vars) {
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
     $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
     $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
-        
+    
     // Get metadata section -- note that the view mode is "full", 
     // so set this view to contain the fields you want. However, 
     // the following items are always blocked:
@@ -444,8 +445,7 @@ function shanti_texts_preprocess_node(&$vars) {
       );
     }
     
-		// Build the render array for the page
-		
+		// Build the render array for the page		
     $vars['content']['shanti_texts_container'] = array(
       '#type' => 'container',
       '#attributes' => array('id' => 'shanti-texts-container'),
@@ -528,8 +528,10 @@ function shanti_texts_preprocess_node(&$vars) {
         unset($vars['content'][$k]);
       }      
     }
+
     unset($vars['submitted']); 
-        
+    
+    
   }
 }
 
@@ -556,7 +558,12 @@ function shanti_texts_whole_node($node, $children = '') {
   $build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
 
 	// Then grab the content only -- make sure the field is visible in the view mode!
-  $node->rendered = check_markup($build['field_book_content']['#items'][0]['value'],'full_html');
+  if (isset($build['field_book_content']['#items'])) {
+    $node->rendered = check_markup($build['field_book_content']['#items'][0]['value'],'full_html');  
+  }
+  else {
+    $node->rendered = ''; // ???
+  }
   	
   $nid = $node->nid;
   $editmenu = NULL;
