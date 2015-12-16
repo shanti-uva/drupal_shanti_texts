@@ -263,12 +263,12 @@ function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
 }
 
 function shanti_texts_node_submit($node, $form, &$form_state){
-  watchdog_array('SHANTI','node_submit',$node);
+  //watchdog_array('SHANTI','node_submit',$node);
 }
 
 
 function shanti_texts_node_presave($node) {
-  watchdog_array('SHANTI','node_presave',$node);
+  //watchdog_array('SHANTI','node_presave',$node);
 }
 
 function shanti_texts_node_insert($node) {
@@ -294,11 +294,13 @@ function _shanti_texts_book_update_or_insert($node,$op) {
     $lang = $node->language;
     if (isset($book->field_og_collection_ref)) { // Depends on collection field
       $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];
+      field_attach_update('node', $node);      
+      // FOR SOME REASON, node_save is called twice so field_attach_insert fails     
       #if ($op == 'insert') {
       #  field_attach_insert('node', $node); # THIS CREATES AN INTEGRITY CONSTRAINT
       #} 
       #elseif ($op == 'update') {
-        field_attach_update('node', $node);      
+      #  field_attach_update('node', $node);      
       #} 
     }
   }
