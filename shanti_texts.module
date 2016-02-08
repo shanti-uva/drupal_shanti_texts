@@ -306,7 +306,6 @@ function _shanti_texts_book_update_or_insert($node,$op) {
   }
   // Case: Parent; set childrens' collections to parent's
   elseif ($node->nid == $node->book['bid']) {
-    watchdog_array('SHANTI',"$op child",$node);
     if ($op == 'update') {
       $sql = "SELECT nid FROM {book} WHERE bid = :bid AND nid != bid";
       $rs = db_query($sql,array(':bid' => $node->nid));
@@ -321,13 +320,16 @@ function _shanti_texts_book_update_or_insert($node,$op) {
     }
   }
   else {
-    watchdog_array('SHANTI',"$op else",$node);     
+    //watchdog_array('SHANTI',"$op else",$node);     
   }
 }
 
 function shanti_texts_node_delete($node) {
   if ($node->type == 'book') {
-    //shanti_texts_clear_cache_text($node->book['bid'], false);
+	shanti_texts_clear_cache_text($node->book['bid'], false);
+	if ($node->nid != $node->book['bid']) {
+		drupal_goto("node/".$node->book['bid']);	
+	}
   }
 }
 
@@ -335,7 +337,6 @@ function shanti_texts_node_delete($node) {
 // Should try to figure out if last or something
 function shanti_texts_node_postsave($node,$op) {
   if ($node->type == 'book') {
-    watchdog_array('SHANTI', "node_postsave $op", $node);
     shanti_texts_clear_cache_text($node->book['bid'], true);
    }
 }
@@ -419,8 +420,8 @@ function shanti_texts_preprocess_node(&$vars) {
     $book = $vars['book'];
     $shanti_texts_data_book = shanti_texts_get_whole_book($book);
     $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
-    $book_body_rendered 		= $shanti_texts_data_book[$bid]; 
-    $book_toc_rendered 			= $shanti_texts_data_toc[$bid];
+    $book_body_rendered 	= $shanti_texts_data_book[$bid]; 
+    $book_toc_rendered 		= $shanti_texts_data_toc[$bid];
     
     // Get metadata section -- note that the view mode is "full", 
     // so set this view to contain the fields you want. However, 
@@ -532,8 +533,7 @@ function shanti_texts_preprocess_node(&$vars) {
     }
 
     unset($vars['submitted']); 
-    
-    
+      
   }
 }
 
