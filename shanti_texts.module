@@ -60,11 +60,6 @@ function shanti_texts_menu() {
       'weight' => 10,
       'access arguments' => array('administer shanti texts'),             
     ),
-    'admin/shanti_texts/rebuild' => array(
-      'page callback' => 'shanti_texts_admin_rebuild_page',
-      'type' => MENU_CALLBACK,
-      'access arguments' => array('administer shanti texts'),        
-    ),
   );
 }
 
@@ -97,8 +92,7 @@ function shanti_texts_node_ajax($nid) {
 
 function shanti_texts_node_ajax_text($nid) {
   $node = node_load($nid);
-  $content = shanti_texts_get_whole_book($node->book);
-  print $content[$nid];
+  print views_embed_view('single_text_body','panel_pane_default',$node->book['bid']);
 }
 
 function shanti_texts_node_embed($nid) {
@@ -117,6 +111,7 @@ function shanti_texts_admin_page() {
   $build = array(
     '#type' => 'container',
     '#prefix' => ('<h2>SHANTI Texts Admin Page</h2>'),
+    /*
     'actions' => array(
       '#type' => 'ul',
       '#theme' => 'item_list',
@@ -125,73 +120,9 @@ function shanti_texts_admin_page() {
         array('data' => l('Rebuild texts (run this after clearing the cache)','admin/shanti_texts/rebuild')),
       ),
     ),
+	*/
   );
   return $build;
-}
-
-function shanti_texts_admin_rebuild_page() {
-  $batch = array(
-    'operations' => array(
-      array('shanti_texts_rebuild_books', array()),
-    ),
-    'finished'          => 'shanti_texts_rebuilder_finished',
-    'title'             => t('SHANTI Texts Rebuilder'),
-    'init_message'      => t('Rebuilder is starting.'),
-    //'progress_message'  => t('Processed @current out of @total batch operations.'),
-    'progress_message'  => t('Attempting to rebuild all texts.'),
-    'error_message'     => t('SHANTI Texts Rebuilder has encountered an error.'),    
-  );
-  batch_set($batch);
-  batch_process("admin/content/book/shanti_texts");
-}
-
-function shanti_texts_rebuild_books(&$context) {
-  if (!isset($context['sandbox']['progress'])) {
-    $context['sandbox']['progress'] = 0;
-    $context['sandbox']['current_node'] = 0;
-    $rs = db_query("SELECT bid FROM {book} WHERE bid = nid");
-    while ($r = $rs->fetchObject()) { $context['results']['bids'][] = $r->bid; }
-    $context['results']['max'] = count($context['results']['bids']);
-    $context['results']['processed'] = 0;
-  }
-  $count = 10;
-  $bid_count = count($context['results']['bids']);
-  if ($bid_count < $count) { $count = $bid_count; }
-  $context['message'] = t("Rebuilt " . $context['sandbox']['progress'] . " of " . $context['results']['max'] . " texts.");
-  for ($i = 0; $i < $count; $i++) {
-    $bid = array_shift($context['results']['bids']); 
-		shanti_texts_clear_cache_text($bid, true, false);
-    $context['sandbox']['current_node'] = $bid;
-    $context['sandbox']['progress']++;
-    $context['results']['processed']++;
-  }
-  if ($context['sandbox']['progress'] != $context['results']['max']) {
-    $context['finished'] = $context['sandbox']['progress'] / $context['results']['max'];
-  } 
-}
-
-function shanti_texts_rebuilder_finished($success, $results, $operations) {
-  if ($success) {
-    $message = $results['processed'] . ' of ' . $results['max'] . ' nodes rebuilt.';
-    drupal_set_message($message);
-  } 
-  else {
-    $error_operation = reset($operations);
-    $message = t('An error occurred while processing %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
-    drupal_set_message($message, 'error');
-  }
-}
-
-/**
- * This template is called by the visit function used by
- * book_export_traverse() use throughout the module
- */
-function shanti_texts_theme($existing, $type, $theme, $path) {
-  return array(
-    'whole_node_html' => array(
-      'variables' => array('node' => NULL, 'children' => NULL, 'editmenu' => NULL),
-    ),
-  );
 }
 
 function shanti_texts_menu_alter(&$items) { 
@@ -234,43 +165,6 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
   } 
 }
 
-function shanti_texts_book_submit_callback($form, &$form_state) {
-  // Hack? At least check of bid exists ...
-  $bid = $form_state['build_info']['args'][0]->book['bid']; 
-  shanti_texts_clear_cache_text($bid, true);
-}
-
-function shanti_texts_clear_cache_text($bid, $rebuild = false, $debug = false) {
-  $message = '';
-  if ($bid) {
-    cache_clear_all('shanti_texts_data_book' . $bid, 'cache');
-    cache_clear_all('shanti_texts_data_toc' . $bid, 'cache');
-    $message .= "All caches cleared for this text";
-    if ($rebuild) {
-      $node = node_load($bid);
-      $book = $node->book;
-      shanti_texts_get_whole_book($book);
-      shanti_texts_get_whole_toc($book);
-      $message .= "  and text rebuilt";
-    }
-  }
-  else {
-    $message = 'No book defined.';	
-  }
-  if ($debug) {
-    drupal_set_message($message.".");
-  }
-}
-
-function shanti_texts_node_submit($node, $form, &$form_state){
-  //watchdog_array('SHANTI','node_submit',$node);
-}
-
-
-function shanti_texts_node_presave($node) {
-  //watchdog_array('SHANTI','node_presave',$node);
-}
-
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
     _shanti_texts_book_update_or_insert($node,'insert');
@@ -283,6 +177,7 @@ function shanti_texts_node_update($node) {
   }
 }
 
+# REVIEW THIS -- CONSIDER REPLACING WITH RULES
 function _shanti_texts_book_update_or_insert($node,$op) {
 
   if (empty($node->nid)) {
@@ -295,13 +190,6 @@ function _shanti_texts_book_update_or_insert($node,$op) {
     if (isset($book->field_og_collection_ref)) { // Depends on collection field
       $node->field_og_collection_ref[$lang][0]['target_id'] = $book->field_og_collection_ref[$lang][0]['target_id'];
       field_attach_update('node', $node);      
-      // FOR SOME REASON, node_save is called twice so field_attach_insert fails     
-      #if ($op == 'insert') {
-      #  field_attach_insert('node', $node); # THIS CREATES AN INTEGRITY CONSTRAINT
-      #} 
-      #elseif ($op == 'update') {
-      #  field_attach_update('node', $node);      
-      #} 
     }
   }
   // Case: Parent; set childrens' collections to parent's
@@ -320,81 +208,8 @@ function _shanti_texts_book_update_or_insert($node,$op) {
     }
   }
   else {
-    //watchdog_array('SHANTI',"$op else",$node);     
+    // Do nothing     
   }
-}
-
-function shanti_texts_node_delete($node) {
-  if ($node->type == 'book') {
-	shanti_texts_clear_cache_text($node->book['bid'], false);
-	if ($node->nid != $node->book['bid']) {
-		drupal_goto("node/".$node->book['bid']);	
-	}
-  }
-}
-
-// This is still expensive, since it does this for each child!
-// Should try to figure out if last or something
-function shanti_texts_node_postsave($node,$op) {
-  if ($node->type == 'book') {
-    shanti_texts_clear_cache_text($node->book['bid'], true);
-   }
-}
-
-
-function theme_whole_node_html($vars) {
-  $depth    = $vars['node']->book['depth'];
-  $title    = check_plain($vars['node']->title);
-  $content  = $vars['node']->rendered; // THIS IS CREATED IN *_whole_node()
-  $nid      = $vars['node']->nid;
-  $output   = '';
-  $output  .= "<div id=\"book-node-$nid\" class=\"book-section section-$depth\">\n";
-  $output  .= "<h2 class=\"book-heading\">$title</h2>\n";  
-  $output  .= drupal_render($vars['editmenu']) . "\n";
-  $output  .= $content . "\n";
-  $output  .= $vars['children'] . "\n";
-  $output  .= "</div>\n"; 
-  return $output;
-}
-
-/*
-function theme_whole_toc_html($vars) {
-  // Should build the TOC here and call in shanti_texts_whole_toc() below
-  // so you can override this in a theme. Need to register with hook_theme
-  // first. Vars: depth, prev_depth, nid, title, has_next
-}
-*/
-
-function shanti_texts_get_whole_book($book) {
-  $bid = $book['bid'];    
-  $shanti_texts_data_book = &drupal_static(__FUNCTION__);
-  if (!isset($shanti_texts_data_book[$bid])) {
-    if ($cache = cache_get('shanti_texts_data_book' . $bid)) {
-      $shanti_texts_data_book[$bid] = $cache->data;
-    }
-    else {
-      $tree = book_menu_subtree_data($book);
-      $shanti_texts_data_book[$bid] = book_export_traverse($tree, 'shanti_texts_whole_node');
-      cache_set('shanti_texts_data_book' . $bid, $shanti_texts_data_book[$bid], 'cache');
-    }
-  }
-  return $shanti_texts_data_book;
-}
-
-function shanti_texts_get_whole_toc($book) {
-  $bid = $book['bid'];
-  $shanti_texts_data_toc = &drupal_static(__FUNCTION__);
-  if (!isset($shanti_texts_data_toc[$bid])) {
-    if ($cache = cache_get('shanti_texts_data_toc' . $bid)) {
-      $shanti_texts_data_toc[$bid] = $cache->data;
-    }
-    else {
-      $tree = book_menu_subtree_data($book);
-      $shanti_texts_data_toc[$bid] = book_export_traverse($tree, 'shanti_texts_whole_toc');
-      cache_set('shanti_texts_data_toc' . $bid, $shanti_texts_data_toc[$bid], 'cache');
-    }
-  }
-  return $shanti_texts_data_toc;
 }
 
 /**
@@ -416,21 +231,14 @@ function shanti_texts_preprocess_node(&$vars) {
 	  }
     $top_mlid = $vars['book']['p1'];
 
-    // Get the combined body and TOC
+    // Get the combined body, TOC, and metadata
     $book = $vars['book'];
-    $shanti_texts_data_book = shanti_texts_get_whole_book($book);
-    $shanti_texts_data_toc 	= shanti_texts_get_whole_toc($book);
-    $book_body_rendered 	= $shanti_texts_data_book[$bid]; 
-    $book_toc_rendered 		= $shanti_texts_data_toc[$bid];
     
-    // Get metadata section -- note that the view mode is "full", 
-    // so set this view to contain the fields you want. However, 
-    // the following items are always blocked:
-    hide($vars['content']['comments']);
-    hide($vars['content']['links']);
-    hide($vars['content']['book_navigation']);
-    hide($vars['content']['field_book_content']);
-    $book_meta_rendered = render($vars['content']);
+    // ALL FROM VIEWS !!!
+    $book_body_rendered 	= views_embed_view('single_text_body','panel_pane_default',$bid);
+	$book_toc_rendered 		= views_embed_view('single_text_toc', 'panel_pane_default',$bid);
+    $book_meta_rendered 	= views_embed_view('single_text_meta', 'panel_pane_default',$bid);
+	$book_views_rendered 	= views_embed_view('single_text_views', 'panel_pane_default',$bid);
 
     // Highlight search hits
     // May want to add parameters for substring searching or not --
@@ -448,7 +256,8 @@ function shanti_texts_preprocess_node(&$vars) {
       );
     }
     
-		// Build the render array for the page		
+	// Build the render array for the page
+	// NOTE THAT THIS HARD CODES BOOTSTRAP -- SHOULD DO THIS DIFFERENTLY		
     $vars['content']['shanti_texts_container'] = array(
       '#type' => 'container',
       '#attributes' => array('id' => 'shanti-texts-container'),
@@ -485,7 +294,7 @@ function shanti_texts_preprocess_node(&$vars) {
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
-      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta"><div class="book-title">' . $book['title'] . '</div>',
+      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta">', #<div class="book-title">' . $book['title'] . '</div>',
       '#markup' => $book_meta_rendered, 
       '#suffix' => '</div>',
     );
@@ -493,16 +302,18 @@ function shanti_texts_preprocess_node(&$vars) {
       '#type' => 'container',
       '#attributes' => array('id' => 'shanti-texts-links', 'class' => array('links','tab-pane'), 'role' => 'tabpanel'),
     );
-    $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['title'] = array(
-      '#markup' => '<div class="book-title">' . $book['title'] . '</div>',
-    );
+    #$vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['title'] = array(
+    #  '#markup' => '<div class="book-title">' . $book['title'] . '</div>',
+    #);
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['list'] = array(
-      '#theme' => 'item_list',
-      '#type' => 'ul',
-      '#items' => array(
-        l(t('View in PubReader'), "book_pubreader/$bid", array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader', 'target' => '_blank'))),
-        l(t('View in Voyant'), "shanti_texts/voyant/$bid", array('attributes'  => array('class' => array(), 'title' => 'View book in Voyant tools', 'target' => '_blank'))),
-      ),
+    	'#type' => 'markup',
+    	'#markup' => $book_views_rendered,
+      #'#theme' => 'item_list',
+      #'#type' => 'ul',
+      #'#items' => array(
+      #  l(t('View in PubReader'), "book_pubreader/$bid", array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader', 'target' => '_blank'))),
+      #  l(t('View in Voyant'), "shanti_texts/voyant/$bid", array('attributes'  => array('class' => array(), 'title' => 'View book in Voyant tools', 'target' => '_blank'))),
+      #),
     );
         
     // Add CSS and JS
@@ -537,111 +348,3 @@ function shanti_texts_preprocess_node(&$vars) {
   }
 }
 
-function shanti_texts_entity_info_alter(&$info) {
-  $info['node']['view modes']['whole'] = array(
-    'label' => t('Whole Book'),
-    'custom settings' => TRUE,
-  );
-  $info['node']['view modes']['embed'] = array(
-    'label' => t('Embedded'),
-    'custom settings' => TRUE,
-  );
-}
-
-/**
- * Called by book_export_traverse() above to generate the content of the page.
- * May want to rewrite; this was just copied and heavilty modified
- * from the book module's print function. I really don't understand it at this
- * point.
- */ 
-function shanti_texts_whole_node($node, $children = '') {
-
-	// Grab the whole view 
-  $build = node_view($node, 'whole'); // Depends on the view mode defined in info_alter hook  
-
-	// Then grab the content only -- make sure the field is visible in the view mode!
-  if (isset($build['field_book_content']['#items'])) {
-    $node->rendered = check_markup($build['field_book_content']['#items'][0]['value'],'full_html');  
-  }
-  else {
-    $node->rendered = ''; // ???
-  }
-  	
-  $nid = $node->nid;
-  $editmenu = NULL;
-	$editmenu = array(
-		'#type' => 'container',
-		'#access' => user_access('add content to books'),
-		'#attributes' => array('class' => array('book-edit-menu')),
-		'toc-edit-page' => array(
-			'#markup'   => l(
-				'<span class="glyphicon glyphicon-edit"></span>',
-				"node/$nid/edit",
-				array(
-					'html' => TRUE, 
-					'query' => array('destination' => current_path()),
-					'fragment' => "node-$nid",
-					'attributes' => array('title' => t('Edit this page')),
-					// Above does not work. May need to define a menu path that calls drupal_goto() 
-				)
-			),
-		),
-		'toc-add-child-page' => array(
-			'#markup' => l(
-				'<span class="glyphicon glyphicon-plus"></span>',
-				"node/add/book",
-				array(
-					'html' => TRUE,
-					'query' => array('parent' => $node->book['mlid']),
-					'attributes' => array('title' => t('Add a child page')),
-				)
-			),
-		)
-	);
-
-  $new_build = array(
-    '#theme'    => 'whole_node_html',
-    '#node'     => $node,
-    '#children' => $children,
-    '#editmenu' => $editmenu,
-  );
-  return drupal_render($new_build);
-}
-
-/**
- * Also called by book_export_traverse() to generate a table of contents.
- * This is a hand-made function that might be replaced by something more Drupally.
- * I don't understand how the $children argument works at this point.
- * Should name space the class names and use a render array.
- */
-function shanti_texts_whole_toc($node, $children = '') {
-    $output = '';
-    $nid    = $node->nid;
-    $title  = check_plain($node->title);
-    $depth  = $node->book['depth'];
-    
-    if ($prev = book_prev($node->book)) {
-      $x = $depth - $prev['depth'];
-      //if ($x == 0) '' // Same level
-      if ($x > 0) $output .= "<ul class='level-{$prev['depth']}'>\n"; // $x should never be > 1
-      elseif ($x < 0) {
-        for ($i = 0; $i > $x; $i--) {
-          $output .= "</ul>\n"; 
-        }
-      }
-    }
-    
-    $output .= "<li class='toc-item-node' id='toc-item-node-$nid'><a href='#book-node-$nid'>$title</a></li>\n";
-    
-    if ($next = book_next($node->book)) {
-      // Do nothing
-    } else {
-      // Clean up ..
-      for ($i = 0; $i < ($depth - 1); $i++) {
-        $output .= "</ul>\n";         
-      }
-    }
-    
-    $output .= $children;
-    return $output;
-}
