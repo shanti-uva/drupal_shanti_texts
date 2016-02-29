@@ -6,6 +6,7 @@ core = 7.x
 files[] = shanti_texts.filters.inc
 files[] = shanti_texts.megasearch.inc
 
-dependencies[]	= book
-dependencies[]  = book_made_simple
-dependencies[]  = shanti_kmaps_fields
+dependencies[] = book
+dependencies[] = book_made_simple
+dependencies[] = shanti_kmaps_fields
+dependencies[] = shanti_texts_features

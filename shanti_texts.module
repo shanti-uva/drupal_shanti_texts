@@ -40,6 +40,7 @@ function shanti_texts_menu() {
       'access callback' => 'user_access', 
       'access arguments' => array('access content'),
     ),
+
     'shanti_texts/node_embed/%' => array(
       'page callback' => 'shanti_texts_node_embed',
       'page arguments' => array(2),
@@ -47,6 +48,7 @@ function shanti_texts_menu() {
       'access callback' => 'user_access', 
       'access arguments' => array('access content'),
     ),
+
     'shanti_texts/node_json/%' => array(
       'page callback' => 'shanti_texts_node_json',
       'page arguments' => array(2),
@@ -98,7 +100,7 @@ function shanti_texts_node_ajax_text($nid) {
 function shanti_texts_node_embed($nid) {
   drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css');
   $node = node_load($nid);
-  $build = node_view($node,'embed');
+  $build = node_view($node,'embed'); // This view mode is declared in Display Suite
   return $build;
 }
 
@@ -144,6 +146,7 @@ function shanti_texts_edit_tab_title($node) {
   return t('Edit');
 }
 
+/*
 function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'book_admin_edit') {
     $form['save']['#value'] = 'Save text sections';
@@ -164,19 +167,20 @@ function shanti_texts_form_alter(&$form, &$form_state, $form_id) {
     }
   } 
 }
+*/
 
 function shanti_texts_node_insert($node) {
   if ($node->type == 'book') {
-    _shanti_texts_book_update_or_insert($node,'insert');
+    //_shanti_texts_book_update_or_insert($node,'insert');
   }  
 }
 
 function shanti_texts_node_update($node) {
   if ($node->type == 'book') {
-    _shanti_texts_book_update_or_insert($node,'update');
+   // _shanti_texts_book_update_or_insert($node,'update');
   }
 }
-
+/*
 # REVIEW THIS -- CONSIDER REPLACING WITH RULES
 function _shanti_texts_book_update_or_insert($node,$op) {
 
@@ -211,37 +215,40 @@ function _shanti_texts_book_update_or_insert($node,$op) {
     // Do nothing     
   }
 }
-
+*/
 /**
  * This does most of the heavy lifting. Note that this could be replaced by 
  * a Panel, with views for the TOC and Content parts.
  */
-function shanti_texts_preprocess_node(&$vars) {
+function shanti_texts_preprocess_node(&$vars) 
+{
   
-  if ($vars['type'] == 'book' && $vars['teaser'] == FALSE) {
+  if ($vars['type'] == 'book' && $vars['teaser'] == FALSE) 
+  {
     
     // If not top of book, redirect to the book
     $nid = $vars['nid'];
     $bid = $vars['book']['bid'];
-    if (!$bid) { drupal_set_message("This is not a book yet!"); }
-    elseif ($bid != $nid) { 
-    	$s = '';
-	  	if (array_key_exists('s',$_GET)) { $s = $_GET['s']; }
-    	drupal_goto("node/$bid", array('query' => array('s' => $s), 'fragment' => "book-node-$nid")); 
-	  }
+    if (!$bid) 
+    {
+    	drupal_set_message("This is not a book yet!"); 
+	}
+    elseif ($bid != $nid) 
+    { 
+		$s = '';
+		if (array_key_exists('s',$_GET)) { $s = $_GET['s']; }
+		drupal_goto("node/$bid", array('query' => array('s' => $s), 'fragment' => "book-node-$nid")); 
+	}
     $top_mlid = $vars['book']['p1'];
 
-    // Get the combined body, TOC, and metadata
-    $book = $vars['book'];
-    
     // ALL FROM VIEWS !!!
-    $book_body_rendered 	= views_embed_view('single_text_body','panel_pane_default',$bid);
-	$book_toc_rendered 		= views_embed_view('single_text_toc', 'panel_pane_default',$bid);
-    $book_meta_rendered 	= views_embed_view('single_text_meta', 'panel_pane_default',$bid);
-	$book_views_rendered 	= views_embed_view('single_text_views', 'panel_pane_default',$bid);
+    $book_body_rendered 	= views_embed_view('single_text_body',	'panel_pane_default',$bid);
+    $book_toc_rendered 		= views_embed_view('single_text_toc', 	'panel_pane_default',$bid);
+    $book_meta_rendered 	= views_embed_view('single_text_meta', 	'panel_pane_default',$bid);
+    $book_views_rendered 	= views_embed_view('single_text_views', 'panel_pane_default',$bid);
 
     // Highlight search hits
-    // May want to add parameters for substring searching or not --
+    // May want to add parameters for substring searching or not;
     // basically expose some regex options
     if (isset($_GET['s']) && !preg_match("/^\s*$/",$_GET['s'])) {
       $s = $_GET['s'];
@@ -294,7 +301,7 @@ function shanti_texts_preprocess_node(&$vars) {
     );
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['meta'] = array(
       '#type'   => 'markup',
-      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta">', #<div class="book-title">' . $book['title'] . '</div>',
+      '#prefix' => '<div role="tabpanel" class="tab-pane" id="shanti-texts-meta">',
       '#markup' => $book_meta_rendered, 
       '#suffix' => '</div>',
     );
@@ -302,18 +309,9 @@ function shanti_texts_preprocess_node(&$vars) {
       '#type' => 'container',
       '#attributes' => array('id' => 'shanti-texts-links', 'class' => array('links','tab-pane'), 'role' => 'tabpanel'),
     );
-    #$vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['title'] = array(
-    #  '#markup' => '<div class="book-title">' . $book['title'] . '</div>',
-    #);
     $vars['content']['shanti_texts_container']['sidebar']['tabcontent']['links']['list'] = array(
     	'#type' => 'markup',
     	'#markup' => $book_views_rendered,
-      #'#theme' => 'item_list',
-      #'#type' => 'ul',
-      #'#items' => array(
-      #  l(t('View in PubReader'), "book_pubreader/$bid", array('attributes' => array('class' => array(), 'title' => 'View book in NIH PubReader', 'target' => '_blank'))),
-      #  l(t('View in Voyant'), "shanti_texts/voyant/$bid", array('attributes'  => array('class' => array(), 'title' => 'View book in Voyant tools', 'target' => '_blank'))),
-      #),
     );
         
     // Add CSS and JS
@@ -337,13 +335,13 @@ function shanti_texts_preprocess_node(&$vars) {
       ),
     );
     
-    foreach(array_keys($vars['content']) as $k) {
-      if ($k != 'shanti_texts_container') {
-        unset($vars['content'][$k]);
-      }      
-    }
+    #foreach(array_keys($vars['content']) as $k) {
+    #  if ($k != 'shanti_texts_container') {
+    #    unset($vars['content'][$k]);
+    #  }      
+    #}
 
-    unset($vars['submitted']); 
+    #unset($vars['submitted']); 
       
   }
 }
