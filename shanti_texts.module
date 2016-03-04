@@ -108,9 +108,8 @@ function shanti_texts_node_ajax_text($nid)
 
 function shanti_texts_node_embed($nid) 
 {
-    drupal_add_css(SHANTI_TEXTS_PATH . '/css/shanti_texts_embed.css');
     $node = node_load($nid);
-    $build = node_view($node,'embed'); // This view mode is declared in Display Suite
+    $build = node_view($node,'embed'); // This view mode is declared in Display Suite -- should it just be declared here?
     return $build;
 }
 
