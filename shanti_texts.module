@@ -124,16 +124,6 @@ function shanti_texts_admin_page()
     $build = array(
     '#type' => 'container',
     '#prefix' => ('<h2>SHANTI Texts Admin Page</h2>'),
-    /*
-    'actions' => array(
-      '#type' => 'ul',
-      '#theme' => 'item_list',
-      '#attributes' => array(),
-      '#items' => array(
-        array('data' => l('Rebuild texts (run this after clearing the cache)','admin/shanti_texts/rebuild')),
-      ),
-    ),
-    */
     );
     return $build;
 }
@@ -241,5 +231,15 @@ function _shanti_texts_book_update_or_insert($node,$op)
     {
         // Do nothing     
     }
+}
+
+function shanti_texts_node_delete($node)
+{
+	if ($node->type == 'book')
+	{
+		# If node has children
+	} 
+	
+	
 }
 
