@@ -122,11 +122,39 @@ function shanti_texts_node_json($nid)
 function shanti_texts_admin_page() 
 {
     $build = array(
-    '#type' => 'container',
-    '#prefix' => ('<h2>SHANTI Texts Admin Page</h2>'),
+	    '#type' => 'container',
+	    '#prefix' => ('<h2>SHANTI Texts Admin Page</h2>'),
     );
     return $build;
 }
+
+/**
+ * Blocks
+ */
+ 
+function shanti_texts_block_info()
+{
+	$blocks['flyout_search'] = array(
+		'info' => t('Flyout Search Tabs'),
+		'cache' => DRUPAL_CACHE_PER_ROLE,
+	);
+	return $blocks;
+}
+
+function shanti_texts_block_view($block_key)
+{
+	 $block = array(); 
+	 if ($block_key == 'flyout_search')
+	{
+	 	 $block['subject'] = t('Flyout Search Tabs'); 
+	 	 $block['content'] = t('Replace this content with a template.'); 
+	 } 
+	 return $block; 
+} 
+
+/**
+ * Alterations
+ */
 
 function shanti_texts_menu_alter(&$items) 
 { 
