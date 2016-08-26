@@ -4,79 +4,78 @@ define('SHANTI_TEXTS_PATH', drupal_get_path('module','shanti_texts'));
 
 function shanti_texts_help($path, $arg) 
 {
-    if ($path == "admin/help#shanti_texts") 
-    {
+    if ($path == "admin/help#shanti_texts") {
         return '<p>'.t('SHANTI Texts help is not currently available.').'</p>';
     }
 }
 
 function shanti_texts_enable() 
 {
-  drupal_set_message($message = t('SHANTI Texts activated.'), $type = 'status');
-  drupal_theme_rebuild();
+    drupal_set_message($message = t('SHANTI Texts activated.'), $type = 'status');
+    drupal_theme_rebuild();
 }
 
 function shanti_texts_menu() 
 {
-  return array(
-    'shanti_texts' => array(
-      'page callback' => 'shanti_texts_default',
-      'type' => MENU_CALLBACK,
-      'access arguments' => array('access content'),
-    ),
-    'shanti_texts/voyant/%' => array(
-      'page callback' => 'shanti_texts_voyant',
-      'page arguments' => array(2),
-      'type' => MENU_CALLBACK,
-      'access arguments' => array('access content'),
-    ),
-    'shanti_texts/node_ajax/%' => array(
-      'page callback' => 'shanti_texts_node_ajax',
-      'page arguments' => array(2),
-      'type' => MENU_CALLBACK,
-      'access callback' => 'user_access', 
-      'access arguments' => array('access content'),
-    ),
-    'shanti_texts/node_ajax_text/%' => array(
-      'page callback' => 'shanti_texts_node_ajax_text',
-      'page arguments' => array(2),
-      'type' => MENU_CALLBACK,
-      'access callback' => 'user_access', 
-      'access arguments' => array('access content'),
-    ),
-
-    'shanti_texts/node_embed/%' => array(
-      'page callback' => 'shanti_texts_node_embed',
-      'page arguments' => array(2),
-      'type' => MENU_CALLBACK,
-      'access callback' => 'user_access', 
-      'access arguments' => array('access content'),
-    ),
-
-    'shanti_texts/node_json/%' => array(
-      'page callback' => 'shanti_texts_node_json',
-      'page arguments' => array(2),
-      'type' => MENU_CALLBACK,
-      'access arguments' => array('access content'),    
-    ),
-    'admin/content/book/shanti_texts' => array(
-      'title' => 'SHANTI Texts',
-      'page callback' => 'shanti_texts_admin_page',
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 10,
-      'access arguments' => array('administer shanti texts'),             
-    ),
-  );
+    return array(
+        'shanti_texts' => array(
+            'page callback' => 'shanti_texts_default',
+            'type' => MENU_CALLBACK,
+            'access arguments' => array('access content'),
+        ),
+        'shanti_texts/voyant/%' => array(
+            'page callback' => 'shanti_texts_voyant',
+            'page arguments' => array(2),
+            'type' => MENU_CALLBACK,
+            'access arguments' => array('access content'),
+        ),
+        'shanti_texts/node_ajax/%' => array(
+            'page callback' => 'shanti_texts_node_ajax',
+            'page arguments' => array(2),
+            'type' => MENU_CALLBACK,
+            'access callback' => 'user_access', 
+            'access arguments' => array('access content'),
+        ),
+        'shanti_texts/node_ajax_text/%' => array(
+            'page callback' => 'shanti_texts_node_ajax_text',
+            'page arguments' => array(2),
+            'type' => MENU_CALLBACK,
+            'access callback' => 'user_access', 
+            'access arguments' => array('access content'),
+        ),
+        
+        'shanti_texts/node_embed/%' => array(
+            'page callback' => 'shanti_texts_node_embed',
+            'page arguments' => array(2),
+            'type' => MENU_CALLBACK,
+            'access callback' => 'user_access', 
+            'access arguments' => array('access content'),
+        ),
+        
+        'shanti_texts/node_json/%' => array(
+            'page callback' => 'shanti_texts_node_json',
+            'page arguments' => array(2),
+            'type' => MENU_CALLBACK,
+            'access arguments' => array('access content'),    
+        ),
+        'admin/content/book/shanti_texts' => array(
+            'title' => 'SHANTI Texts',
+            'page callback' => 'shanti_texts_admin_page',
+            'type' => MENU_LOCAL_TASK,
+            'weight' => 10,
+            'access arguments' => array('administer shanti texts'),             
+        ),
+    );
 }
 
 function shanti_texts_permission() 
 {
-  return array(
-    'administer shanti texts' => array(
-      'title' => t('Administer SHANTI Texts'),
-      'description' => t('Perform administration tasks for SHANTI Texts.'),
-    ),
-  );
+    return array(
+        'administer shanti texts' => array(
+            'title' => t('Administer SHANTI Texts'),
+            'description' => t('Perform administration tasks for SHANTI Texts.'),
+        ),
+    );
 }
 
 /**
@@ -131,7 +130,7 @@ function shanti_texts_admin_page()
 /**
  * Blocks
  */
- 
+
 function shanti_texts_block_info()
 {
 	$blocks['flyout_search'] = array(
@@ -143,13 +142,13 @@ function shanti_texts_block_info()
 
 function shanti_texts_block_view($block_key)
 {
-	 $block = array(); 
-	 if ($block_key == 'flyout_search')
+    $block = array(); 
+    if ($block_key == 'flyout_search')
 	{
-	 	 $block['subject'] = t('Flyout Search Tabs'); 
-	 	 $block['content'] = t('Replace this content with a template.'); 
-	 } 
-	 return $block; 
+        $block['subject'] = t('Flyout Search Tabs'); 
+        $block['content'] = t('Replace this content with a template.'); 
+    } 
+    return $block; 
 } 
 
 /**
